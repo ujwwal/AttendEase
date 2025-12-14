@@ -5,8 +5,11 @@ This file serves as the entry point for Vercel's serverless Python runtime.
 import sys
 import os
 
+# Get the absolute path to the project root
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 # Add parent directory to path so we can import our app modules
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, ROOT_DIR)
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
@@ -14,10 +17,11 @@ from datetime import datetime, date
 from config import Config, DEFAULT_SUBJECTS
 from models import db, User, Subject, Attendance
 
-# Create Flask app
+# Create Flask app with absolute paths
 app = Flask(__name__, 
-            template_folder='../templates',
-            static_folder='../static')
+            template_folder=os.path.join(ROOT_DIR, 'templates'),
+            static_folder=os.path.join(ROOT_DIR, 'static'),
+            static_url_path='/static')
 app.config.from_object(Config)
 
 # Initialize extensions
@@ -53,6 +57,13 @@ with app.app_context():
             db.session.commit()
     except Exception as e:
         print(f"Database initialization error: {e}")
+
+# Serve static files explicitly (fallback for Vercel)
+from flask import send_from_directory
+
+@app.route('/static/<path:filename>')
+def serve_static(filename):
+    return send_from_directory(os.path.join(ROOT_DIR, 'static'), filename)
 
 # Routes
 @app.route('/')
