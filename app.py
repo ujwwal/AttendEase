@@ -43,13 +43,14 @@ def register():
         return redirect(url_for('dashboard'))
     
     if request.method == 'POST':
-        username = request.form.get('username', '').strip()
+        name = request.form.get('name', '').strip()
+        username = request.form.get('username', '').strip()  # ERP number
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         
         # Validation
-        if not username or not email or not password:
+        if not name or not username or not email or not password:
             flash('All fields are required!', 'error')
             return render_template('register.html')
         
@@ -63,7 +64,7 @@ def register():
         
         # Check if user exists
         if User.query.filter_by(username=username).first():
-            flash('Username already exists!', 'error')
+            flash('ERP number already registered!', 'error')
             return render_template('register.html')
         
         if User.query.filter_by(email=email).first():
@@ -71,7 +72,7 @@ def register():
             return render_template('register.html')
         
         # Create new user
-        user = User(username=username, email=email)
+        user = User(name=name, username=username, email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -250,7 +251,7 @@ def settings():
     
     if request.method == 'POST':
         for subject in subjects:
-            new_name = request.form.get(f'name_{subject.id}', subject.name).strip()
+            # Only allow editing total lectures, not subject names (names are fixed)
             new_lectures = request.form.get(f'lectures_{subject.id}', subject.total_lectures)
             
             try:
@@ -260,7 +261,6 @@ def settings():
             except ValueError:
                 new_lectures = 40
             
-            subject.name = new_name
             subject.total_lectures = new_lectures
         
         db.session.commit()

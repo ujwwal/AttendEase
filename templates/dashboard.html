@@ -7,8 +7,8 @@
     <header class="dashboard-header">
         <div class="header-content">
             <div class="greeting">
-                <h1>Hello, {{ current_user.username }}! 👋</h1>
-                <p class="date">{{ today.strftime('%A, %B %d, %Y') }}</p>
+                <h1>Hello, {{ current_user.name }}! 👋</h1>
+                <p class="date">ERP: {{ current_user.username }} • {{ today.strftime('%A, %B %d, %Y') }}</p>
             </div>
             <a href="{{ url_for('mark_attendance') }}" class="btn btn-primary">
                 <span>Mark Today's Attendance</span>

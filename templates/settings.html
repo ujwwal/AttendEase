@@ -7,13 +7,13 @@
     <header class="page-header">
         <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
         <h1>Settings</h1>
-        <p>Customize your subjects and lecture counts</p>
+        <p>Adjust total lecture counts for each subject</p>
     </header>
 
     <form method="POST" class="settings-form">
         <section class="settings-section">
             <h2>Subject Configuration</h2>
-            <p class="section-desc">Update subject names and total lecture counts</p>
+            <p class="section-desc">Update the total expected lectures for each subject</p>
 
             <div class="subjects-settings">
                 {% for subject in subjects %}
@@ -21,9 +21,8 @@
                     <div class="setting-number">{{ loop.index }}</div>
                     <div class="setting-fields">
                         <div class="form-group">
-                            <label for="name_{{ subject.id }}">Subject Name</label>
-                            <input type="text" id="name_{{ subject.id }}" name="name_{{ subject.id }}"
-                                value="{{ subject.name }}" required>
+                            <label>Subject Name</label>
+                            <div class="subject-name-display">{{ subject.name }}</div>
                         </div>
                         <div class="form-group">
                             <label for="lectures_{{ subject.id }}">Total Lectures</label>

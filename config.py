@@ -30,14 +30,14 @@ class Config:
         'max_overflow': 10,
     }
 
-# Default subjects configuration
+# Default subjects configuration (Fixed - cannot be edited by users)
 DEFAULT_SUBJECTS = [
-    {'name': 'Subject 1', 'total_lectures': 40},
-    {'name': 'Subject 2', 'total_lectures': 40},
-    {'name': 'Subject 3', 'total_lectures': 40},
-    {'name': 'Subject 4', 'total_lectures': 40},
-    {'name': 'Subject 5', 'total_lectures': 40},
-    {'name': 'Subject 6', 'total_lectures': 40},
-    {'name': 'Subject 7', 'total_lectures': 40},
-    {'name': 'Subject 8', 'total_lectures': 40},
+    {'name': 'Data Warehousing and Data Mining', 'total_lectures': 40},
+    {'name': 'Web Programming (PHP)', 'total_lectures': 40},
+    {'name': 'Software Project Management', 'total_lectures': 40},
+    {'name': 'Elective', 'total_lectures': 40},
+    {'name': 'Lab on Web Programming with Project', 'total_lectures': 40},
+    {'name': 'Lab on Data Visualization', 'total_lectures': 40},
+    {'name': 'Digital Marketing', 'total_lectures': 40},
+    {'name': 'Indian Culture', 'total_lectures': 40},
 ]
