@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Mark Attendance - AttendEase{% endblock %}
+
+{% block content %}
+<div class="mark-attendance">
+    <header class="page-header">
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+        <h1>Mark Attendance</h1>
+        <p>Record your attendance for today</p>
+    </header>
+
+    <div class="instructions-card">
+        <span class="info-icon">💡</span>
+        <p>For each subject: select <strong>Present</strong> if you attended, <strong>Absent</strong> if you missed it,
+            or leave as <strong>No Lecture</strong> if there was no class.</p>
+    </div>
+
+    <form method="POST" class="attendance-form">
+        <div class="date-selector">
+            <label for="date">Select Date</label>
+            <input type="date" id="date" name="date" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}">
+        </div>
+
+        <div class="subjects-list">
+            {% for subject in subjects %}
+            <div class="attendance-item {% if subject.already_marked %}already-marked{% endif %}">
+                <div class="subject-info">
+                    <h3>{{ subject.name }}</h3>
+                    {% if subject.already_marked %}
+                    <span class="marked-badge">Previously marked: {{ subject.status_text }}</span>
+                    {% endif %}
+                </div>
+                <div class="attendance-options">
+                    <label class="option-label no-lecture">
+                        <input type="radio" name="subject_{{ subject.id }}" value="none" {% if not
+                            subject.already_marked or subject.status=='none' %}checked{% endif %}>
+                        <span class="option-box">
+                            <span class="option-icon">📭</span>
+                            <span class="option-text">No Lecture</span>
+                        </span>
+                    </label>
+                    <label class="option-label absent">
+                        <input type="radio" name="subject_{{ subject.id }}" value="absent" {% if
+                            subject.status=='absent' %}checked{% endif %}>
+                        <span class="option-box">
+                            <span class="option-icon">❌</span>
+                            <span class="option-text">Absent</span>
+                        </span>
+                    </label>
+                    <label class="option-label present">
+                        <input type="radio" name="subject_{{ subject.id }}" value="present" {% if
+                            subject.status=='present' %}checked{% endif %}>
+                        <span class="option-box">
+                            <span class="option-icon">✅</span>
+                            <span class="option-text">Present</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="quick-actions">
+            <button type="button" class="btn btn-outline" id="markAllPresent">
+                <span>✅ All Present</span>
+            </button>
+            <button type="button" class="btn btn-outline" id="markAllAbsent">
+                <span>❌ All Absent</span>
+            </button>
+            <button type="button" class="btn btn-outline" id="markAllNone">
+                <span>📭 All No Lecture</span>
+            </button>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full">
+            <span>Save Attendance</span>
+            <span class="btn-icon">💾</span>
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.getElementById('markAllPresent').addEventListener('click', function () {
+        document.querySelectorAll('input[value="present"]').forEach(rb => rb.checked = true);
+    });
+
+    document.getElementById('markAllAbsent').addEventListener('click', function () {
+        document.querySelectorAll('input[value="absent"]').forEach(rb => rb.checked = true);
+    });
+
+    document.getElementById('markAllNone').addEventListener('click', function () {
+        document.querySelectorAll('input[value="none"]').forEach(rb => rb.checked = true);
+    });
+</script>
+{% endblock %}

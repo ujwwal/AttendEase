@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - AttendEase{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <header class="dashboard-header">
+        <div class="header-content">
+            <div class="greeting">
+                <h1>Hello, {{ current_user.username }}! 👋</h1>
+                <p class="date">{{ today.strftime('%A, %B %d, %Y') }}</p>
+            </div>
+            <a href="{{ url_for('mark_attendance') }}" class="btn btn-primary">
+                <span>Mark Today's Attendance</span>
+                <span class="btn-icon">✅</span>
+            </a>
+        </div>
+    </header>
+
+    <section class="stats-overview">
+        <div class="stat-card main-stat">
+            <div class="stat-icon">📈</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ overall_percentage }}%</span>
+                <span class="stat-label">Overall Attendance</span>
+            </div>
+            <div class="stat-progress">
+                <div class="progress-ring">
+                    <svg viewBox="0 0 100 100">
+                        <circle class="progress-bg" cx="50" cy="50" r="45"></circle>
+                        <circle class="progress-fill" cx="50" cy="50" r="45"
+                            style="stroke-dasharray: {{ overall_percentage * 2.83 }} 283"></circle>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ total_attended }}</span>
+                <span class="stat-label">Classes Attended</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <span class="stat-value">{{ total_classes }}</span>
+                <span class="stat-label">Total Classes</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="subjects-section">
+        <div class="section-header">
+            <h2>Subject-wise Attendance</h2>
+        </div>
+        <div class="subjects-grid">
+            {% for subject in subjects %}
+            <div class="subject-card" data-subject-id="{{ subject.id }}">
+                <div class="subject-header">
+                    <h3>{{ subject.name }}</h3>
+                    {% if subject.marked_today %}
+                    {% if subject.present_today %}
+                    <span class="status-badge present">Present Today</span>
+                    {% else %}
+                    <span class="status-badge absent">Absent Today</span>
+                    {% endif %}
+                    {% else %}
+                    <span class="status-badge pending">Not Marked</span>
+                    {% endif %}
+                </div>
+
+                <div class="subject-stats">
+                    <div class="percentage-display">
+                        <span class="percentage-value {{ 'low' if subject.stats.percentage < 75 else 'good' }}">
+                            {{ subject.stats.percentage }}%
+                        </span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill {{ 'low' if subject.stats.percentage < 75 else 'good' }}"
+                            style="width: {{ subject.stats.percentage }}%"></div>
+                    </div>
+                </div>
+
+                <div class="subject-details">
+                    <div class="detail-item">
+                        <span class="detail-label">Attended</span>
+                        <span class="detail-value">{{ subject.stats.attended }}/{{ subject.stats.total_marked }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Lectures</span>
+                        <span class="detail-value">{{ subject.stats.total_lectures }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Remaining</span>
+                        <span class="detail-value">{{ subject.stats.remaining }}</span>
+                    </div>
+                </div>
+
+                <a href="{{ url_for('subject_detail', subject_id=subject.id) }}" class="subject-link">
+                    View Details →
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

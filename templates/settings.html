@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - AttendEase{% endblock %}
+
+{% block content %}
+<div class="settings-page">
+    <header class="page-header">
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+        <h1>Settings</h1>
+        <p>Customize your subjects and lecture counts</p>
+    </header>
+
+    <form method="POST" class="settings-form">
+        <section class="settings-section">
+            <h2>Subject Configuration</h2>
+            <p class="section-desc">Update subject names and total lecture counts</p>
+
+            <div class="subjects-settings">
+                {% for subject in subjects %}
+                <div class="subject-setting-item">
+                    <div class="setting-number">{{ loop.index }}</div>
+                    <div class="setting-fields">
+                        <div class="form-group">
+                            <label for="name_{{ subject.id }}">Subject Name</label>
+                            <input type="text" id="name_{{ subject.id }}" name="name_{{ subject.id }}"
+                                value="{{ subject.name }}" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="lectures_{{ subject.id }}">Total Lectures</label>
+                            <input type="number" id="lectures_{{ subject.id }}" name="lectures_{{ subject.id }}"
+                                value="{{ subject.total_lectures }}" min="1" max="200" required>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                <span>Save Changes</span>
+                <span class="btn-icon">💾</span>
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

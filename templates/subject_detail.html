@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ subject.name }} - AttendEase{% endblock %}
+
+{% block content %}
+<div class="subject-detail">
+    <header class="page-header">
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+        <h1>{{ subject.name }}</h1>
+        <p>Detailed attendance history</p>
+    </header>
+
+    <section class="subject-overview">
+        <div class="overview-grid">
+            <div class="overview-card main">
+                <div class="card-icon">📊</div>
+                <div class="card-content">
+                    <span class="card-value {{ 'low' if stats.percentage < 75 else 'good' }}">{{ stats.percentage
+                        }}%</span>
+                    <span class="card-label">Attendance Rate</span>
+                </div>
+                <div class="progress-bar large">
+                    <div class="progress-fill {{ 'low' if stats.percentage < 75 else 'good' }}"
+                        style="width: {{ stats.percentage }}%"></div>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon">✅</div>
+                <div class="card-content">
+                    <span class="card-value">{{ stats.attended }}</span>
+                    <span class="card-label">Classes Attended</span>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon">📚</div>
+                <div class="card-content">
+                    <span class="card-value">{{ stats.total_marked }}</span>
+                    <span class="card-label">Total Conducted</span>
+                </div>
+            </div>
+            <div class="overview-card">
+                <div class="card-icon">📅</div>
+                <div class="card-content">
+                    <span class="card-value">{{ stats.remaining }}</span>
+                    <span class="card-label">Lectures Remaining</span>
+                </div>
+            </div>
+        </div>
+
+        {% if stats.percentage < 75 %} <div class="warning-banner">
+            <span class="warning-icon">⚠️</span>
+            <div class="warning-content">
+                <strong>Low Attendance Alert!</strong>
+                <p>Your attendance is below 75%. You need to attend more classes to meet the minimum requirement.</p>
+            </div>
+</div>
+{% endif %}
+</section>
+
+<section class="history-section">
+    <h2>Attendance History</h2>
+
+    {% if records %}
+    <div class="history-list">
+        {% for record in records %}
+        <div class="history-item {{ 'present' if record.is_present else 'absent' }}">
+            <div class="history-date">
+                <span class="date-day">{{ record.date.strftime('%d') }}</span>
+                <span class="date-month">{{ record.date.strftime('%b') }}</span>
+            </div>
+            <div class="history-info">
+                <span class="history-day">{{ record.date.strftime('%A') }}</span>
+                <span class="history-status">{{ 'Present' if record.is_present else 'Absent' }}</span>
+            </div>
+            <div class="history-icon">
+                {{ '✅' if record.is_present else '❌' }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>No Records Yet</h3>
+        <p>Start marking attendance to see your history here.</p>
+        <a href="{{ url_for('mark_attendance') }}" class="btn btn-primary">Mark Attendance</a>
+    </div>
+    {% endif %}
+</section>
+</div>
+{% endblock %}
