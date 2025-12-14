@@ -14,7 +14,7 @@
     --warning: #f59e0b;
     --danger: #ef4444;
     --danger-light: #fee2e2;
-    
+
     /* Neutrals */
     --bg-primary: #0f172a;
     --bg-secondary: #1e293b;
@@ -24,14 +24,14 @@
     --text-secondary: #94a3b8;
     --text-muted: #64748b;
     --border-color: #334155;
-    
+
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
     --gradient-success: linear-gradient(135deg, #10b981 0%, #059669 100%);
     --gradient-warning: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
     --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
     --gradient-card: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-    
+
     /* Spacing */
     --spacing-xs: 0.25rem;
     --spacing-sm: 0.5rem;
@@ -39,20 +39,20 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     --spacing-2xl: 3rem;
-    
+
     /* Border Radius */
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
     --radius-xl: 1rem;
     --radius-full: 9999px;
-    
+
     /* Shadows */
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.25);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.3);
     --shadow-glow: 0 0 40px rgba(99, 102, 241, 0.3);
-    
+
     /* Transitions */
     --transition-fast: 150ms ease;
     --transition-base: 250ms ease;
@@ -60,7 +60,9 @@
 }
 
 /* Reset & Base */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -146,7 +148,8 @@ a:hover {
     font-size: 1.25rem;
 }
 
-.nav-link:hover, .nav-link.active {
+.nav-link:hover,
+.nav-link.active {
     background: var(--bg-tertiary);
     color: var(--text-primary);
 }
@@ -198,16 +201,28 @@ a:hover {
         opacity: 0;
         transform: translateX(100px);
     }
+
     to {
         opacity: 1;
         transform: translateX(0);
     }
 }
 
-.flash-success { border-left: 4px solid var(--success); }
-.flash-error { border-left: 4px solid var(--danger); }
-.flash-info { border-left: 4px solid var(--secondary); }
-.flash-warning { border-left: 4px solid var(--warning); }
+.flash-success {
+    border-left: 4px solid var(--success);
+}
+
+.flash-error {
+    border-left: 4px solid var(--danger);
+}
+
+.flash-info {
+    border-left: 4px solid var(--secondary);
+}
+
+.flash-warning {
+    border-left: 4px solid var(--warning);
+}
 
 .flash-close {
     background: none;
@@ -259,8 +274,15 @@ a:hover {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
 }
 
 .auth-header h1 {
@@ -397,9 +419,19 @@ a:hover {
 }
 
 @keyframes float {
-    0%, 100% { transform: translate(0, 0) scale(1); }
-    33% { transform: translate(30px, -30px) scale(1.05); }
-    66% { transform: translate(-20px, 20px) scale(0.95); }
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(30px, -30px) scale(1.05);
+    }
+
+    66% {
+        transform: translate(-20px, 20px) scale(0.95);
+    }
 }
 
 /* ============================================
@@ -637,8 +669,13 @@ a:hover {
     font-weight: 700;
 }
 
-.percentage-value.good { color: var(--success); }
-.percentage-value.low { color: var(--danger); }
+.percentage-value.good {
+    color: var(--success);
+}
+
+.percentage-value.low {
+    color: var(--danger);
+}
 
 .progress-bar {
     height: 8px;
@@ -653,8 +690,13 @@ a:hover {
     transition: width 0.5s ease;
 }
 
-.progress-bar .progress-fill.good { background: var(--gradient-success); }
-.progress-bar .progress-fill.low { background: var(--gradient-danger); }
+.progress-bar .progress-fill.good {
+    background: var(--gradient-success);
+}
+
+.progress-bar .progress-fill.low {
+    background: var(--gradient-danger);
+}
 
 .progress-bar.large {
     height: 12px;
@@ -818,7 +860,7 @@ a:hover {
     overflow: hidden;
 }
 
-.toggle-switch input:checked + .toggle-slider {
+.toggle-switch input:checked+.toggle-slider {
     background: var(--success);
 }
 
@@ -843,11 +885,11 @@ a:hover {
     opacity: 1;
 }
 
-.toggle-switch input:checked + .toggle-slider .toggle-text.present {
+.toggle-switch input:checked+.toggle-slider .toggle-text.present {
     opacity: 1;
 }
 
-.toggle-switch input:checked + .toggle-slider .toggle-text.absent {
+.toggle-switch input:checked+.toggle-slider .toggle-text.absent {
     opacity: 0;
 }
 
@@ -1136,27 +1178,27 @@ a:hover {
         justify-content: space-between;
         align-items: center;
     }
-    
+
     .stats-overview {
         grid-template-columns: repeat(3, 1fr);
     }
-    
+
     .stat-card.main-stat {
         grid-column: span 3;
     }
-    
+
     .subjects-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .overview-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    
+
     .overview-card.main {
         grid-column: span 2;
     }
-    
+
     .setting-fields {
         grid-template-columns: 2fr 1fr;
     }
@@ -1168,19 +1210,19 @@ a:hover {
         gap: var(--spacing-sm);
         font-size: 0.875rem;
     }
-    
+
     .stat-card.main-stat {
         grid-column: span 1;
     }
-    
+
     .subjects-grid {
         grid-template-columns: repeat(3, 1fr);
     }
-    
+
     .overview-grid {
         grid-template-columns: repeat(4, 1fr);
     }
-    
+
     .overview-card.main {
         grid-column: span 1;
     }
@@ -1189,5 +1231,145 @@ a:hover {
 @media (min-width: 1280px) {
     .subjects-grid {
         grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* ============================================
+   3-Option Attendance System
+   ============================================ */
+.instructions-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    background: rgba(99, 102, 241, 0.1);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.info-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.instructions-card p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.instructions-card strong {
+    color: var(--text-primary);
+}
+
+.attendance-item {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.attendance-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+}
+
+.option-label {
+    cursor: pointer;
+}
+
+.option-label input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.option-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+    text-align: center;
+}
+
+.option-icon {
+    font-size: 1.5rem;
+}
+
+.option-text {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+
+/* No Lecture option */
+.option-label.no-lecture input:checked+.option-box {
+    background: rgba(100, 116, 139, 0.2);
+    border-color: var(--text-muted);
+}
+
+.option-label.no-lecture input:checked+.option-box .option-text {
+    color: var(--text-primary);
+}
+
+/* Absent option */
+.option-label.absent input:checked+.option-box {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--danger);
+}
+
+.option-label.absent input:checked+.option-box .option-text {
+    color: var(--danger);
+}
+
+/* Present option */
+.option-label.present input:checked+.option-box {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--success);
+}
+
+.option-label.present input:checked+.option-box .option-text {
+    color: var(--success);
+}
+
+/* Hover effects */
+.option-label:hover .option-box {
+    background: var(--bg-secondary);
+    transform: translateY(-2px);
+}
+
+.quick-actions .btn {
+    flex: 1;
+    min-width: 100px;
+    font-size: 0.85rem;
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Responsive adjustments for attendance options */
+@media (max-width: 400px) {
+    .attendance-options {
+        grid-template-columns: 1fr;
+    }
+
+    .option-box {
+        flex-direction: row;
+        justify-content: flex-start;
+        gap: var(--spacing-md);
+    }
+
+    .quick-actions {
+        flex-direction: column;
+    }
+
+    .quick-actions .btn {
+        width: 100%;
     }
 }
