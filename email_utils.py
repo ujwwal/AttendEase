@@ -4,8 +4,8 @@ Email utility module using Resend API
 import os
 import resend
 
-# Initialize Resend with API key
-resend.api_key = os.environ.get('RESEND_API_KEY', 're_FuhbhFyR_9XaNHVkxtgYtzSP8HTRYTz1W')
+# Initialize Resend with API key from environment variable
+resend.api_key = os.environ.get('RESEND_API_KEY')
 
 def send_welcome_email(user_email, user_name, erp_number, password):
     """
