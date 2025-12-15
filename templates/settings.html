@@ -7,12 +7,75 @@
     <header class="page-header">
         <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
         <h1>Settings</h1>
-        <p>Adjust total lecture counts for each subject</p>
+        <p>Manage your account and preferences</p>
     </header>
 
+    <!-- Account Information Section -->
+    <section class="settings-section">
+        <h2>👤 Account Information</h2>
+        <p class="section-desc">Your account details</p>
+
+        <div class="account-info-card">
+            <div class="info-row">
+                <span class="info-label">Full Name</span>
+                <span class="info-value">{{ current_user.name }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ERP Number</span>
+                <span class="info-value">{{ current_user.username }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Email</span>
+                <span class="info-value">{{ current_user.email }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Member Since</span>
+                <span class="info-value">{{ current_user.created_at.strftime('%B %d, %Y') }}</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Change Password Section -->
+    <section class="settings-section">
+        <h2>🔐 Change Password</h2>
+        <p class="section-desc">Update your account password</p>
+
+        <form method="POST" class="password-change-form">
+            <div class="form-group">
+                <label for="current_password">Current Password</label>
+                <div class="input-wrapper-settings">
+                    <input type="password" id="current_password" name="current_password"
+                        placeholder="Enter current password" required minlength="6">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password">New Password</label>
+                <div class="input-wrapper-settings">
+                    <input type="password" id="new_password" name="new_password"
+                        placeholder="Enter new password (min 6 chars)" required minlength="6">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_new_password">Confirm New Password</label>
+                <div class="input-wrapper-settings">
+                    <input type="password" id="confirm_new_password" name="confirm_new_password"
+                        placeholder="Confirm new password" required minlength="6">
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary">
+                <span>Update Password</span>
+                <span class="btn-icon">🔑</span>
+            </button>
+        </form>
+    </section>
+
+    <!-- Subject Configuration Section -->
     <form method="POST" class="settings-form">
         <section class="settings-section">
-            <h2>Subject Configuration</h2>
+            <h2>📚 Subject Configuration</h2>
             <p class="section-desc">Update the total expected lectures for each subject</p>
 
             <div class="subjects-settings">
@@ -37,7 +100,7 @@
 
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">
-                <span>Save Changes</span>
+                <span>Save Subject Settings</span>
                 <span class="btn-icon">💾</span>
             </button>
             <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Cancel</a>

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     {% if current_user.is_authenticated %}
     <nav class="navbar">
@@ -19,15 +21,22 @@
                 <span class="brand-text">AttendEase</span>
             </a>
             <div class="nav-menu">
-                <a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
+                <a href="{{ url_for('dashboard') }}"
+                    class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">
                     <span class="nav-icon">📊</span>
                     <span>Dashboard</span>
                 </a>
-                <a href="{{ url_for('mark_attendance') }}" class="nav-link {% if request.endpoint == 'mark_attendance' %}active{% endif %}">
+                <a href="{{ url_for('mark_attendance') }}"
+                    class="nav-link {% if request.endpoint == 'mark_attendance' %}active{% endif %}">
                     <span class="nav-icon">✅</span>
                     <span>Mark</span>
                 </a>
-                <a href="{{ url_for('settings') }}" class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}">
+                <a href="{{ url_for('notes') }}" class="nav-link {% if request.endpoint == 'notes' %}active{% endif %}">
+                    <span class="nav-icon">📝</span>
+                    <span>Notes</span>
+                </a>
+                <a href="{{ url_for('settings') }}"
+                    class="nav-link {% if request.endpoint == 'settings' %}active{% endif %}">
                     <span class="nav-icon">⚙️</span>
                     <span>Settings</span>
                 </a>
@@ -42,16 +51,16 @@
 
     <main class="main-content">
         {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <div class="flash-messages">
-                    {% for category, message in messages %}
-                        <div class="flash-message flash-{{ category }}">
-                            <span>{{ message }}</span>
-                            <button class="flash-close" onclick="this.parentElement.remove()">×</button>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash-message flash-{{ category }}">
+                <span>{{ message }}</span>
+                <button class="flash-close" onclick="this.parentElement.remove()">×</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
         {% endwith %}
 
         {% block content %}{% endblock %}
@@ -60,4 +69,5 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>
+
 </html>

@@ -1,10 +1,23 @@
+"""
+Flask Application Entry Point
+"""
+import sys
+import os
+
+# Get the absolute path to the project root
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, date
 from config import Config, DEFAULT_SUBJECTS
 from models import db, User, Subject, Attendance
 
-app = Flask(__name__)
+# Create Flask app
+app = Flask(__name__, 
+            template_folder=os.path.join(ROOT_DIR, 'templates'),
+            static_folder=os.path.join(ROOT_DIR, 'static'),
+            static_url_path='/static')
 app.config.from_object(Config)
 
 # Initialize extensions
@@ -14,21 +27,25 @@ login_manager.init_app(app)
 login_manager.login_view = 'login'
 login_manager.login_message_category = 'info'
 
+# Google Drive folder configuration
+GOOGLE_DRIVE_FOLDER_ID = '1aBHLl0Wp8fcApVb4d-ZBUcfOQdsh02KU'
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-def init_db():
-    """Initialize database with default subjects"""
-    with app.app_context():
+# Initialize database on startup
+with app.app_context():
+    try:
         db.create_all()
-        # Add default subjects if none exist
         if Subject.query.count() == 0:
             for subj in DEFAULT_SUBJECTS:
                 subject = Subject(name=subj['name'], total_lectures=subj['total_lectures'])
                 db.session.add(subject)
             db.session.commit()
             print("Default subjects added!")
+    except Exception as e:
+        print(f"Database initialization error: {e}")
 
 # Routes
 @app.route('/')
@@ -44,12 +61,11 @@ def register():
     
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
-        username = request.form.get('username', '').strip()  # ERP number
+        username = request.form.get('username', '').strip()
         email = request.form.get('email', '').strip().lower()
         password = request.form.get('password', '')
         confirm_password = request.form.get('confirm_password', '')
         
-        # Validation
         if not name or not username or not email or not password:
             flash('All fields are required!', 'error')
             return render_template('register.html')
@@ -62,7 +78,6 @@ def register():
             flash('Password must be at least 6 characters!', 'error')
             return render_template('register.html')
         
-        # Check if user exists
         if User.query.filter_by(username=username).first():
             flash('ERP number already registered!', 'error')
             return render_template('register.html')
@@ -71,13 +86,19 @@ def register():
             flash('Email already registered!', 'error')
             return render_template('register.html')
         
-        # Create new user
         user = User(name=name, username=username, email=email)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
         
-        flash('Registration successful! Please login.', 'success')
+        # Send welcome email
+        try:
+            from email_utils import send_welcome_email
+            send_welcome_email(email, name, username, password)
+        except Exception as e:
+            print(f"Failed to send welcome email: {e}")
+        
+        flash('Registration successful! Check your email for account details.', 'success')
         return redirect(url_for('login'))
     
     return render_template('register.html')
@@ -97,10 +118,10 @@ def login():
         if user and user.check_password(password):
             login_user(user, remember=remember)
             next_page = request.args.get('next')
-            flash(f'Welcome back, {user.username}!', 'success')
+            flash(f'Welcome back, {user.name}!', 'success')
             return redirect(next_page if next_page else url_for('dashboard'))
         else:
-            flash('Invalid username or password!', 'error')
+            flash('Invalid ERP number or password!', 'error')
     
     return render_template('login.html')
 
@@ -111,13 +132,86 @@ def logout():
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
 
+# Password Reset Routes
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        
+        if not email:
+            flash('Please enter your email address.', 'error')
+            return render_template('forgot_password.html')
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            token = user.generate_reset_token()
+            db.session.commit()
+            
+            try:
+                from email_utils import send_password_reset_email
+                reset_url = url_for('reset_password', token=token, email=email, _external=True)
+                result = send_password_reset_email(user.email, user.name, token, reset_url)
+                print(f"Reset email result for {email}: {result}, token: {token}")
+            except Exception as e:
+                import traceback
+                print(f"Failed to send reset email: {e}")
+                traceback.print_exc()
+        
+        flash('If an account exists with that email, you will receive a password reset code.', 'success')
+        return redirect(url_for('reset_password', email=email))
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password', methods=['GET', 'POST'])
+def reset_password():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    
+    email = request.args.get('email', '')
+    token = request.args.get('token', '')
+    
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        token = request.form.get('token', '').strip()
+        new_password = request.form.get('new_password', '')
+        confirm_password = request.form.get('confirm_password', '')
+        
+        if not email or not token or not new_password:
+            flash('All fields are required.', 'error')
+            return render_template('reset_password.html', email=email, token=token)
+        
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html', email=email, token=token)
+        
+        if len(new_password) < 6:
+            flash('Password must be at least 6 characters.', 'error')
+            return render_template('reset_password.html', email=email, token=token)
+        
+        user = User.query.filter_by(email=email).first()
+        
+        if user and user.verify_reset_token(token):
+            user.set_password(new_password)
+            user.clear_reset_token()
+            db.session.commit()
+            flash('Password reset successful! Please login with your new password.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('Invalid or expired reset code. Please try again.', 'error')
+            return render_template('reset_password.html', email=email, token=token)
+    
+    return render_template('reset_password.html', email=email, token=token)
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
     subjects = Subject.query.all()
     today = date.today()
     
-    # Get attendance data for each subject
     subject_data = []
     total_attended = 0
     total_classes = 0
@@ -125,7 +219,6 @@ def dashboard():
     for subject in subjects:
         stats = subject.get_user_attendance(current_user.id)
         
-        # Check if already marked today
         today_record = Attendance.query.filter_by(
             user_id=current_user.id,
             subject_id=subject.id,
@@ -165,12 +258,10 @@ def mark_attendance():
         except ValueError:
             attendance_date = today
         
-        marked_count = 0
         for subject in subjects:
             field_name = f'subject_{subject.id}'
-            status = request.form.get(field_name, 'none')  # none, absent, or present
+            status = request.form.get(field_name, 'none')
             
-            # Check if record exists for this date
             existing = Attendance.query.filter_by(
                 user_id=current_user.id,
                 subject_id=subject.id,
@@ -178,11 +269,9 @@ def mark_attendance():
             ).first()
             
             if status == 'none':
-                # No lecture - remove any existing record for this date
                 if existing:
                     db.session.delete(existing)
             else:
-                # There was a lecture - create or update record
                 is_present = (status == 'present')
                 if existing:
                     existing.is_present = is_present
@@ -194,13 +283,11 @@ def mark_attendance():
                         is_present=is_present
                     )
                     db.session.add(record)
-                marked_count += 1
         
         db.session.commit()
         flash(f'Attendance marked for {attendance_date.strftime("%B %d, %Y")}!', 'success')
         return redirect(url_for('dashboard'))
     
-    # Get today's attendance status for each subject
     subject_status = []
     for subject in subjects:
         today_record = Attendance.query.filter_by(
@@ -209,7 +296,6 @@ def mark_attendance():
             date=today
         ).first()
         
-        # Determine status: none, absent, or present
         if today_record is None:
             status = 'none'
             status_text = 'No Lecture'
@@ -236,7 +322,6 @@ def subject_detail(subject_id):
     subject = Subject.query.get_or_404(subject_id)
     stats = subject.get_user_attendance(current_user.id)
     
-    # Get all attendance records for this subject
     records = Attendance.query.filter_by(
         user_id=current_user.id,
         subject_id=subject_id
@@ -250,17 +335,36 @@ def settings():
     subjects = Subject.query.all()
     
     if request.method == 'POST':
-        for subject in subjects:
-            # Only allow editing total lectures, not subject names (names are fixed)
-            new_lectures = request.form.get(f'lectures_{subject.id}', subject.total_lectures)
+        if 'current_password' in request.form:
+            current_password = request.form.get('current_password', '')
+            new_password = request.form.get('new_password', '')
+            confirm_password = request.form.get('confirm_new_password', '')
             
+            if not current_user.check_password(current_password):
+                flash('Current password is incorrect.', 'error')
+                return redirect(url_for('settings'))
+            
+            if new_password != confirm_password:
+                flash('New passwords do not match.', 'error')
+                return redirect(url_for('settings'))
+            
+            if len(new_password) < 6:
+                flash('New password must be at least 6 characters.', 'error')
+                return redirect(url_for('settings'))
+            
+            current_user.set_password(new_password)
+            db.session.commit()
+            flash('Password changed successfully!', 'success')
+            return redirect(url_for('settings'))
+        
+        for subject in subjects:
+            new_lectures = request.form.get(f'lectures_{subject.id}', subject.total_lectures)
             try:
                 new_lectures = int(new_lectures)
                 if new_lectures < 1:
                     new_lectures = 40
             except ValueError:
                 new_lectures = 40
-            
             subject.total_lectures = new_lectures
         
         db.session.commit()
@@ -269,53 +373,14 @@ def settings():
     
     return render_template('settings.html', subjects=subjects)
 
-@app.route('/api/toggle-attendance', methods=['POST'])
+@app.route('/notes')
 @login_required
-def toggle_attendance():
-    """API endpoint for quick attendance toggle"""
-    data = request.get_json()
-    subject_id = data.get('subject_id')
-    attendance_date = data.get('date', date.today().isoformat())
-    is_present = data.get('is_present', True)
-    
-    try:
-        attendance_date = datetime.strptime(attendance_date, '%Y-%m-%d').date()
-    except ValueError:
-        attendance_date = date.today()
-    
-    subject = Subject.query.get(subject_id)
-    if not subject:
-        return jsonify({'error': 'Subject not found'}), 404
-    
-    # Find or create attendance record
-    record = Attendance.query.filter_by(
-        user_id=current_user.id,
-        subject_id=subject_id,
-        date=attendance_date
-    ).first()
-    
-    if record:
-        record.is_present = is_present
-    else:
-        record = Attendance(
-            user_id=current_user.id,
-            subject_id=subject_id,
-            date=attendance_date,
-            is_present=is_present
-        )
-        db.session.add(record)
-    
-    db.session.commit()
-    
-    # Get updated stats
-    stats = subject.get_user_attendance(current_user.id)
-    
-    return jsonify({
-        'success': True,
-        'stats': stats,
-        'is_present': is_present
-    })
+def notes():
+    return render_template('notes.html', folder_id=GOOGLE_DRIVE_FOLDER_ID)
+
+@app.route('/api/health')
+def health_check():
+    return jsonify({'status': 'healthy', 'timestamp': datetime.utcnow().isoformat()})
 
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)

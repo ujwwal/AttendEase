@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}Notes - AttendEase{% endblock %}
+
+{% block content %}
+<div class="notes-page">
+    <header class="page-header">
+        <a href="{{ url_for('dashboard') }}" class="back-link">← Back to Dashboard</a>
+        <h1>📝 Class Notes</h1>
+        <p>Access all your study materials from Google Drive</p>
+    </header>
+
+    <div class="notes-container">
+        <div class="drive-embed-wrapper">
+            <div class="drive-info-card">
+                <div class="info-icon">📂</div>
+                <div class="info-content">
+                    <h3>Shared Notes Folder</h3>
+                    <p>All class notes and study materials are stored in a shared Google Drive folder. Click the button
+                        below to access them.</p>
+                </div>
+            </div>
+
+            <div class="drive-actions">
+                <a href="https://drive.google.com/drive/folders/{{ folder_id }}" target="_blank"
+                    rel="noopener noreferrer" class="btn btn-primary btn-lg">
+                    <span class="btn-icon-left">📁</span>
+                    <span>Open in Google Drive</span>
+                    <span class="btn-icon">↗</span>
+                </a>
+            </div>
+
+            <div class="drive-embed">
+                <iframe src="https://drive.google.com/embeddedfolderview?id={{ folder_id }}#grid" class="drive-iframe"
+                    frameborder="0" allowfullscreen>
+                </iframe>
+            </div>
+
+            <div class="drive-tips">
+                <h3>💡 Quick Tips</h3>
+                <ul>
+                    <li><strong>Download files:</strong> Right-click on any file and select "Download"</li>
+                    <li><strong>Search:</strong> Use Ctrl/Cmd + F to search within the folder</li>
+                    <li><strong>Mobile:</strong> Open in Google Drive app for the best mobile experience</li>
+                    <li><strong>Offline access:</strong> Download important files for offline study</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

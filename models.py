@@ -1,7 +1,8 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
+import secrets
 
 db = SQLAlchemy()
 
@@ -15,6 +16,10 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Password reset fields
+    reset_token = db.Column(db.String(6), nullable=True)
+    reset_token_expires = db.Column(db.DateTime, nullable=True)
+    
     # Relationship to attendance records
     attendance_records = db.relationship('Attendance', backref='user', lazy='dynamic')
     
@@ -23,6 +28,25 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def generate_reset_token(self):
+        """Generate a 6-digit reset token valid for 15 minutes"""
+        self.reset_token = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        self.reset_token_expires = datetime.utcnow() + timedelta(minutes=15)
+        return self.reset_token
+    
+    def verify_reset_token(self, token):
+        """Verify if the reset token is valid and not expired"""
+        if not self.reset_token or not self.reset_token_expires:
+            return False
+        if datetime.utcnow() > self.reset_token_expires:
+            return False
+        return self.reset_token == token
+    
+    def clear_reset_token(self):
+        """Clear the reset token after successful password reset"""
+        self.reset_token = None
+        self.reset_token_expires = None
     
     def get_attendance_stats(self, subject_id=None):
         """Calculate attendance statistics for the user"""

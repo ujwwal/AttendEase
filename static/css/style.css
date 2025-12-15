@@ -1511,3 +1511,232 @@ a:hover {
         align-self: flex-start;
     }
 }
+
+/* ============================================
+   Forgot Password & Reset Password Pages
+   ============================================ */
+.forgot-link {
+    color: var(--primary-light);
+    font-size: 0.875rem;
+    transition: color var(--transition-fast);
+}
+
+.forgot-link:hover {
+    color: var(--primary);
+}
+
+.token-input {
+    text-align: center;
+    letter-spacing: 8px;
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.form-hint {
+    display: block;
+    margin-top: var(--spacing-xs);
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* ============================================
+   Account Info Section in Settings
+   ============================================ */
+.account-info-card {
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-top: var(--spacing-md);
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.info-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.info-row:first-child {
+    padding-top: 0;
+}
+
+.info-label {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.info-value {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* Password Change Form */
+.password-change-form {
+    margin-top: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.input-wrapper-settings {
+    width: 100%;
+}
+
+.input-wrapper-settings input {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 1rem;
+    transition: all var(--transition-base);
+}
+
+.input-wrapper-settings input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+}
+
+.input-wrapper-settings input::placeholder {
+    color: var(--text-muted);
+}
+
+/* ============================================
+   Notes Page
+   ============================================ */
+.notes-page {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.notes-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xl);
+}
+
+.drive-embed-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+.drive-info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-lg);
+    background: var(--gradient-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+}
+
+.drive-info-card .info-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+
+.drive-info-card .info-content h3 {
+    font-size: 1.25rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+.drive-info-card .info-content p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.drive-actions {
+    display: flex;
+    justify-content: center;
+}
+
+.btn-lg {
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    font-size: 1.1rem;
+}
+
+.btn-icon-left {
+    margin-right: var(--spacing-sm);
+}
+
+.drive-embed {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    min-height: 500px;
+}
+
+.drive-iframe {
+    width: 100%;
+    height: 500px;
+    border: none;
+    background: white;
+}
+
+.drive-tips {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+}
+
+.drive-tips h3 {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.drive-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.drive-tips li {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    padding-left: var(--spacing-md);
+    position: relative;
+}
+
+.drive-tips li::before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+}
+
+.drive-tips li strong {
+    color: var(--text-primary);
+}
+
+/* Responsive adjustments for notes */
+@media (max-width: 640px) {
+    .drive-info-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .drive-info-card .info-icon {
+        font-size: 3rem;
+    }
+
+    .drive-iframe {
+        height: 400px;
+    }
+
+    .btn-lg {
+        width: 100%;
+    }
+}
