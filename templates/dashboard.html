@@ -50,6 +50,43 @@
         </div>
     </section>
 
+    <section class="history-section">
+        <div class="section-header">
+            <h2>Recent Activity</h2>
+        </div>
+
+        {% if recent_history %}
+        <div class="history-list">
+            {% for date_str, data in recent_history.items() %}
+            <div class="history-item">
+                <div class="history-date">
+                    <span class="date-day">{{ data.date_obj.strftime('%d') }}</span>
+                    <span class="date-month">{{ data.date_obj.strftime('%b') }}</span>
+                </div>
+                <div class="history-info">
+                    <span class="history-day">{{ data.date_obj.strftime('%A') }}</span>
+                    <span class="history-status">
+                        Marked {{ data.present_count }}/{{ data.total_subjects }} subjects
+                        {% if data.fully_present_count == data.total_subjects %}
+                        (All Present)
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="history-actions">
+                    <a href="{{ url_for('mark_attendance', date=date_str) }}" class="btn btn-outline btn-sm">
+                        Edit ✏️
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-mini">
+            <p>No recent activity recorded.</p>
+        </div>
+        {% endif %}
+    </section>
+
     <section class="subjects-section">
         <div class="section-header">
             <h2>Subject-wise Attendance</h2>

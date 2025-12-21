@@ -13,7 +13,8 @@
     <form method="POST" class="attendance-form">
         <div class="date-selector">
             <label for="date">Select Date</label>
-            <input type="date" id="date" name="date" value="{{ today.isoformat() }}" max="{{ today.isoformat() }}">
+            <input type="date" id="date" name="date" value="{{ target_date.isoformat() }}" max="{{ today.isoformat() }}"
+                onchange="window.location.href='{{ url_for('mark_attendance') }}?date=' + this.value">
         </div>
 
         <div class="subjects-list">

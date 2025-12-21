@@ -148,6 +148,30 @@ a:hover {
     font-size: 1.25rem;
 }
 
+@media (max-width: 768px) {
+    .nav-container {
+        padding: var(--spacing-sm);
+    }
+
+    .nav-brand .brand-text {
+        display: none;
+    }
+
+    .nav-link span:not(.nav-icon) {
+        display: none;
+    }
+
+    .nav-link {
+        padding: var(--spacing-sm);
+    }
+
+    .nav-menu {
+        gap: 0;
+        width: 100%;
+        justify-content: flex-end;
+    }
+}
+
 .nav-link:hover,
 .nav-link.active {
     background: var(--bg-tertiary);

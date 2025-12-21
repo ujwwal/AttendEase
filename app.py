@@ -239,12 +239,34 @@ def dashboard():
     
     overall_percentage = (total_attended / total_classes * 100) if total_classes > 0 else 0
     
+    # Get recent history (last 5 distinct dates)
+    recent_dates = db.session.query(Attendance.date).filter_by(user_id=current_user.id)\
+        .distinct().order_by(Attendance.date.desc()).limit(5).all()
+    
+    recent_history = {}
+    for r_date in recent_dates:
+        d = r_date[0]
+        date_str = d.isoformat()
+        
+        # Get stats for this day
+        day_records = Attendance.query.filter_by(user_id=current_user.id, date=d).all()
+        present_count = sum(1 for r in day_records if r.lectures_present > 0)
+        fully_present_count = sum(1 for r in day_records if r.lectures_present == r.lectures_total)
+        
+        recent_history[date_str] = {
+            'date_obj': d,
+            'present_count': present_count,
+            'fully_present_count': fully_present_count,
+            'total_subjects': len(day_records)
+        }
+
     return render_template('dashboard.html', 
                          subjects=subject_data, 
                          overall_percentage=round(overall_percentage, 1),
                          total_attended=total_attended,
                          total_classes=total_classes,
-                         today=today)
+                         today=today,
+                         recent_history=recent_history)
 
 @app.route('/mark-attendance', methods=['GET', 'POST'])
 @login_required
@@ -252,12 +274,24 @@ def mark_attendance():
     subjects = Subject.query.all()
     today = date.today()
     
-    if request.method == 'POST':
-        attendance_date = request.form.get('date', today.isoformat())
+    # Check if a specific date is requested for editing
+    requested_date_str = request.args.get('date') or request.form.get('date')
+    if requested_date_str:
         try:
-            attendance_date = datetime.strptime(attendance_date, '%Y-%m-%d').date()
+            target_date = datetime.strptime(requested_date_str, '%Y-%m-%d').date()
         except ValueError:
-            attendance_date = today
+            target_date = today
+    else:
+        target_date = today
+
+    # Prevent marking attendance for future dates
+    if target_date > today:
+        target_date = today
+        flash('Cannot mark attendance for future dates.', 'warning')
+    
+    if request.method == 'POST':
+        # Processing POST request with target_date
+        attendance_date = target_date # Logic already handles safe date parsing from form if needed, but we essentially sync them
         
         for subject in subjects:
             # New simplified form: lectures_X (count) and status_X (present/absent)
@@ -273,7 +307,6 @@ def mark_attendance():
                 lectures_total = 0
             
             # Calculate lectures_present based on status
-            # Present = all lectures attended, Absent = 0 lectures attended
             if status == 'present':
                 lectures_present = lectures_total
             else:
@@ -304,33 +337,34 @@ def mark_attendance():
                     db.session.add(record)
         
         db.session.commit()
-        flash(f'Attendance marked for {attendance_date.strftime("%B %d, %Y")}!', 'success')
+        flash(f'Attendance saved for {attendance_date.strftime("%B %d, %Y")}!', 'success')
         return redirect(url_for('dashboard'))
     
+    # GET request - load data for target_date
     subject_status = []
     for subject in subjects:
-        today_record = Attendance.query.filter_by(
+        record = Attendance.query.filter_by(
             user_id=current_user.id,
             subject_id=subject.id,
-            date=today
+            date=target_date
         ).first()
         
-        if today_record is None:
+        if record is None:
             lectures_total = 0
             lectures_present = 0
         else:
-            lectures_total = today_record.lectures_total
-            lectures_present = today_record.lectures_present
+            lectures_total = record.lectures_total
+            lectures_present = record.lectures_present
         
         subject_status.append({
             'id': subject.id,
             'name': subject.name,
             'lectures_total': lectures_total,
             'lectures_present': lectures_present,
-            'already_marked': today_record is not None
+            'already_marked': record is not None
         })
     
-    return render_template('mark_attendance.html', subjects=subject_status, today=today)
+    return render_template('mark_attendance.html', subjects=subject_status, today=today, target_date=target_date)
 
 @app.route('/subject/<int:subject_id>')
 @login_required
