@@ -10,12 +10,6 @@
         <p>Record your attendance for today</p>
     </header>
 
-    <div class="instructions-card">
-        <span class="info-icon">💡</span>
-        <p>For each subject: select <strong>Present</strong> if you attended, <strong>Absent</strong> if you missed it,
-            or leave as <strong>No Lecture</strong> if there was no class.</p>
-    </div>
-
     <form method="POST" class="attendance-form">
         <div class="date-selector">
             <label for="date">Select Date</label>
@@ -24,52 +18,68 @@
 
         <div class="subjects-list">
             {% for subject in subjects %}
-            <div class="attendance-item {% if subject.already_marked %}already-marked{% endif %}">
+            <div class="attendance-item {% if subject.already_marked %}already-marked{% endif %}"
+                data-subject="{{ subject.id }}">
                 <div class="subject-info">
                     <h3>{{ subject.name }}</h3>
                     {% if subject.already_marked %}
-                    <span class="marked-badge">Previously marked: {{ subject.status_text }}</span>
+                    <span class="marked-badge">Previously marked: {{ subject.lectures_present }}/{{
+                        subject.lectures_total }} lectures</span>
                     {% endif %}
                 </div>
-                <div class="attendance-options">
-                    <label class="option-label no-lecture">
-                        <input type="radio" name="subject_{{ subject.id }}" value="none" {% if not
-                            subject.already_marked or subject.status=='none' %}checked{% endif %}>
-                        <span class="option-box">
-                            <span class="option-icon">📭</span>
-                            <span class="option-text">No Lecture</span>
-                        </span>
-                    </label>
-                    <label class="option-label absent">
-                        <input type="radio" name="subject_{{ subject.id }}" value="absent" {% if
-                            subject.status=='absent' %}checked{% endif %}>
-                        <span class="option-box">
-                            <span class="option-icon">❌</span>
-                            <span class="option-text">Absent</span>
-                        </span>
-                    </label>
-                    <label class="option-label present">
-                        <input type="radio" name="subject_{{ subject.id }}" value="present" {% if
-                            subject.status=='present' %}checked{% endif %}>
-                        <span class="option-box">
-                            <span class="option-icon">✅</span>
-                            <span class="option-text">Present</span>
-                        </span>
-                    </label>
+
+                <div class="attendance-controls">
+                    <!-- Number of Lectures Dropdown -->
+                    <div class="lectures-dropdown">
+                        <label for="lectures_{{ subject.id }}">Lectures Today</label>
+                        <select name="lectures_{{ subject.id }}" id="lectures_{{ subject.id }}"
+                            class="lecture-count-select" data-subject="{{ subject.id }}">
+                            <option value="0" {% if subject.lectures_total==0 %}selected{% endif %}>No Lecture</option>
+                            <option value="1" {% if subject.lectures_total==1 or (not subject.already_marked and
+                                subject.lectures_total !=0) %}selected{% endif %}>1 Lecture</option>
+                            <option value="2" {% if subject.lectures_total==2 %}selected{% endif %}>2 Lectures</option>
+                            <option value="3" {% if subject.lectures_total==3 %}selected{% endif %}>3 Lectures</option>
+                        </select>
+                    </div>
+
+                    <!-- Attendance Status Buttons -->
+                    <div class="status-buttons" id="status_{{ subject.id }}" {% if subject.lectures_total==0
+                        %}style="display: none;" {% endif %}>
+                        <input type="hidden" name="status_{{ subject.id }}" id="status_value_{{ subject.id }}"
+                            value="{% if subject.already_marked %}{% if subject.lectures_present == subject.lectures_total %}present{% elif subject.lectures_present == 0 %}absent{% else %}present{% endif %}{% else %}present{% endif %}">
+
+                        <button type="button"
+                            class="status-btn present {% if not subject.already_marked or subject.lectures_present == subject.lectures_total %}active{% endif %}"
+                            data-status="present" data-subject="{{ subject.id }}">
+                            <span class="status-icon">✓</span>
+                            <span class="status-text">Present</span>
+                        </button>
+                        <button type="button"
+                            class="status-btn absent {% if subject.already_marked and subject.lectures_present == 0 %}active{% endif %}"
+                            data-status="absent" data-subject="{{ subject.id }}">
+                            <span class="status-icon">✗</span>
+                            <span class="status-text">Absent</span>
+                        </button>
+                    </div>
+
+                    <div class="no-lecture-indicator" id="no_lecture_{{ subject.id }}" {% if subject.lectures_total !=0
+                        %}style="display: none;" {% endif %}>
+                        <span class="no-lecture-text">📭 No lecture today</span>
+                    </div>
                 </div>
             </div>
             {% endfor %}
         </div>
 
         <div class="quick-actions">
+            <button type="button" class="btn btn-outline" id="markAllNoLecture">
+                <span>📭 All No Lecture</span>
+            </button>
             <button type="button" class="btn btn-outline" id="markAllPresent">
                 <span>✅ All Present</span>
             </button>
             <button type="button" class="btn btn-outline" id="markAllAbsent">
                 <span>❌ All Absent</span>
-            </button>
-            <button type="button" class="btn btn-outline" id="markAllNone">
-                <span>📭 All No Lecture</span>
             </button>
         </div>
 
@@ -83,16 +93,79 @@
 
 {% block scripts %}
 <script>
+    // Handle lecture count dropdown changes
+    document.querySelectorAll('.lecture-count-select').forEach(select => {
+        select.addEventListener('change', function () {
+            const subjectId = this.dataset.subject;
+            const lectureCount = parseInt(this.value);
+            const statusButtons = document.getElementById('status_' + subjectId);
+            const noLectureIndicator = document.getElementById('no_lecture_' + subjectId);
+
+            if (lectureCount === 0) {
+                // No lecture - hide status buttons, show no lecture indicator
+                statusButtons.style.display = 'none';
+                noLectureIndicator.style.display = 'flex';
+            } else {
+                // Has lectures - show status buttons, hide no lecture indicator
+                statusButtons.style.display = 'flex';
+                noLectureIndicator.style.display = 'none';
+            }
+        });
+    });
+
+    // Handle status button clicks
+    document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const subjectId = this.dataset.subject;
+            const status = this.dataset.status;
+            const hiddenInput = document.getElementById('status_value_' + subjectId);
+            const container = this.parentElement;
+
+            // Remove active class from all buttons in this group
+            container.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active'));
+
+            // Add active class to clicked button
+            this.classList.add('active');
+
+            // Update hidden input value
+            hiddenInput.value = status;
+        });
+    });
+
+    // Quick action: All No Lecture
+    document.getElementById('markAllNoLecture').addEventListener('click', function () {
+        document.querySelectorAll('.lecture-count-select').forEach(select => {
+            select.value = '0';
+            select.dispatchEvent(new Event('change'));
+        });
+    });
+
+    // Quick action: All Present (1 lecture, present)
     document.getElementById('markAllPresent').addEventListener('click', function () {
-        document.querySelectorAll('input[value="present"]').forEach(rb => rb.checked = true);
+        document.querySelectorAll('.lecture-count-select').forEach(select => {
+            select.value = '1';
+            select.dispatchEvent(new Event('change'));
+
+            const subjectId = select.dataset.subject;
+            const presentBtn = document.querySelector(`.status-btn.present[data-subject="${subjectId}"]`);
+            if (presentBtn) {
+                presentBtn.click();
+            }
+        });
     });
 
+    // Quick action: All Absent (1 lecture, absent)
     document.getElementById('markAllAbsent').addEventListener('click', function () {
-        document.querySelectorAll('input[value="absent"]').forEach(rb => rb.checked = true);
-    });
+        document.querySelectorAll('.lecture-count-select').forEach(select => {
+            select.value = '1';
+            select.dispatchEvent(new Event('change'));
 
-    document.getElementById('markAllNone').addEventListener('click', function () {
-        document.querySelectorAll('input[value="none"]').forEach(rb => rb.checked = true);
+            const subjectId = select.dataset.subject;
+            const absentBtn = document.querySelector(`.status-btn.absent[data-subject="${subjectId}"]`);
+            if (absentBtn) {
+                absentBtn.click();
+            }
+        });
     });
 </script>
 {% endblock %}

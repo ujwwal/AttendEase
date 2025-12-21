@@ -230,7 +230,8 @@ def dashboard():
             'name': subject.name,
             'stats': stats,
             'marked_today': today_record is not None,
-            'present_today': today_record.is_present if today_record else None
+            'today_present': today_record.lectures_present if today_record else 0,
+            'today_total': today_record.lectures_total if today_record else 0
         })
         
         total_attended += stats['attended']
@@ -259,8 +260,24 @@ def mark_attendance():
             attendance_date = today
         
         for subject in subjects:
-            field_name = f'subject_{subject.id}'
-            status = request.form.get(field_name, 'none')
+            # New simplified form: lectures_X (count) and status_X (present/absent)
+            lectures_field = f'lectures_{subject.id}'
+            status_field = f'status_{subject.id}'
+            
+            lectures_total = request.form.get(lectures_field, '0')
+            status = request.form.get(status_field, 'present')
+            
+            try:
+                lectures_total = int(lectures_total)
+            except ValueError:
+                lectures_total = 0
+            
+            # Calculate lectures_present based on status
+            # Present = all lectures attended, Absent = 0 lectures attended
+            if status == 'present':
+                lectures_present = lectures_total
+            else:
+                lectures_present = 0
             
             existing = Attendance.query.filter_by(
                 user_id=current_user.id,
@@ -268,19 +285,21 @@ def mark_attendance():
                 date=attendance_date
             ).first()
             
-            if status == 'none':
+            if lectures_total == 0:
+                # No lecture - delete existing record if any
                 if existing:
                     db.session.delete(existing)
             else:
-                is_present = (status == 'present')
                 if existing:
-                    existing.is_present = is_present
+                    existing.lectures_total = lectures_total
+                    existing.lectures_present = lectures_present
                 else:
                     record = Attendance(
                         user_id=current_user.id,
                         subject_id=subject.id,
                         date=attendance_date,
-                        is_present=is_present
+                        lectures_total=lectures_total,
+                        lectures_present=lectures_present
                     )
                     db.session.add(record)
         
@@ -297,20 +316,17 @@ def mark_attendance():
         ).first()
         
         if today_record is None:
-            status = 'none'
-            status_text = 'No Lecture'
-        elif today_record.is_present:
-            status = 'present'
-            status_text = 'Present'
+            lectures_total = 0
+            lectures_present = 0
         else:
-            status = 'absent'
-            status_text = 'Absent'
+            lectures_total = today_record.lectures_total
+            lectures_present = today_record.lectures_present
         
         subject_status.append({
             'id': subject.id,
             'name': subject.name,
-            'status': status,
-            'status_text': status_text,
+            'lectures_total': lectures_total,
+            'lectures_present': lectures_present,
             'already_marked': today_record is not None
         })
     

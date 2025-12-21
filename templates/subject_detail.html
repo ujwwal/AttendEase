@@ -63,17 +63,24 @@
     {% if records %}
     <div class="history-list">
         {% for record in records %}
-        <div class="history-item {{ 'present' if record.is_present else 'absent' }}">
+        <div
+            class="history-item {{ 'present' if record.lectures_present == record.lectures_total else ('absent' if record.lectures_present == 0 else 'partial') }}">
             <div class="history-date">
                 <span class="date-day">{{ record.date.strftime('%d') }}</span>
                 <span class="date-month">{{ record.date.strftime('%b') }}</span>
             </div>
             <div class="history-info">
                 <span class="history-day">{{ record.date.strftime('%A') }}</span>
-                <span class="history-status">{{ 'Present' if record.is_present else 'Absent' }}</span>
+                <span class="history-status">{{ record.lectures_present }}/{{ record.lectures_total }} Lectures</span>
             </div>
             <div class="history-icon">
-                {{ '✅' if record.is_present else '❌' }}
+                {% if record.lectures_present == record.lectures_total %}
+                ✅
+                {% elif record.lectures_present == 0 %}
+                ❌
+                {% else %}
+                ⚠️
+                {% endif %}
             </div>
         </div>
         {% endfor %}

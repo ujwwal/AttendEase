@@ -813,8 +813,7 @@ a:hover {
     border-radius: var(--radius-lg);
     padding: var(--spacing-lg);
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
     gap: var(--spacing-md);
     transition: all var(--transition-base);
 }
@@ -902,6 +901,168 @@ a:hover {
 .quick-actions .btn {
     flex: 1;
     min-width: 140px;
+}
+
+/* Attendance Controls - Simplified UI */
+.attendance-controls {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+@media (min-width: 600px) {
+    .attendance-controls {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+    }
+}
+
+.lectures-dropdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.lectures-dropdown label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.lecture-count-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    min-width: 130px;
+}
+
+.lecture-count-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.lecture-count-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Status Buttons (Present/Absent) */
+.status-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.status-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    min-width: 100px;
+    justify-content: center;
+}
+
+.status-btn:hover {
+    border-color: var(--primary-light);
+    color: var(--text-primary);
+}
+
+.status-btn.present.active {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--success);
+    color: var(--success);
+}
+
+.status-btn.absent.active {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.status-icon {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* No Lecture Indicator */
+.no-lecture-indicator {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border-color);
+}
+
+.no-lecture-text {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+/* Legacy Lecture Selectors - keeping for backwards compatibility */
+.lecture-selectors {
+    display: flex;
+    gap: var(--spacing-lg);
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.selector-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    min-width: 120px;
+}
+
+.selector-group label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.lecture-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    min-width: 100px;
+}
+
+.lecture-select:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.lecture-select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.lecture-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Partial attendance style for history */
+.history-item.partial {
+    border-left: 4px solid var(--warning);
 }
 
 /* ============================================

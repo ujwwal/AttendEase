@@ -52,12 +52,17 @@ class User(UserMixin, db.Model):
         """Calculate attendance statistics for the user"""
         from sqlalchemy import func
         
+        query = db.session.query(
+            func.coalesce(func.sum(Attendance.lectures_total), 0).label('total'),
+            func.coalesce(func.sum(Attendance.lectures_present), 0).label('present')
+        ).filter_by(user_id=self.id)
+        
         if subject_id:
-            total = Attendance.query.filter_by(user_id=self.id, subject_id=subject_id).count()
-            present = Attendance.query.filter_by(user_id=self.id, subject_id=subject_id, is_present=True).count()
-        else:
-            total = Attendance.query.filter_by(user_id=self.id).count()
-            present = Attendance.query.filter_by(user_id=self.id, is_present=True).count()
+            query = query.filter_by(subject_id=subject_id)
+        
+        result = query.first()
+        total = result.total if result else 0
+        present = result.present if result else 0
         
         percentage = (present / total * 100) if total > 0 else 0
         return {'total': total, 'present': present, 'percentage': round(percentage, 1)}
@@ -75,8 +80,16 @@ class Subject(db.Model):
     
     def get_user_attendance(self, user_id):
         """Get attendance stats for a specific user in this subject"""
-        total = Attendance.query.filter_by(user_id=user_id, subject_id=self.id).count()
-        present = Attendance.query.filter_by(user_id=user_id, subject_id=self.id, is_present=True).count()
+        from sqlalchemy import func
+        
+        # Sum up all lectures present and total for this subject
+        result = db.session.query(
+            func.coalesce(func.sum(Attendance.lectures_present), 0).label('present'),
+            func.coalesce(func.sum(Attendance.lectures_total), 0).label('total')
+        ).filter_by(user_id=user_id, subject_id=self.id).first()
+        
+        present = result.present if result else 0
+        total = result.total if result else 0
         percentage = (present / total * 100) if total > 0 else 0
         
         # Calculate projected attendance
@@ -98,7 +111,10 @@ class Attendance(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
-    is_present = db.Column(db.Boolean, default=True)
+    # Number of lectures attended (0 to N)
+    lectures_present = db.Column(db.Integer, default=1)
+    # Total number of lectures that occurred (1 to N)
+    lectures_total = db.Column(db.Integer, default=1)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Unique constraint: one attendance record per user per subject per date

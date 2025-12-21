@@ -60,11 +60,8 @@
                 <div class="subject-header">
                     <h3>{{ subject.name }}</h3>
                     {% if subject.marked_today %}
-                    {% if subject.present_today %}
-                    <span class="status-badge present">Present Today</span>
-                    {% else %}
-                    <span class="status-badge absent">Absent Today</span>
-                    {% endif %}
+                    <span class="status-badge present">{{ subject.today_present }}/{{ subject.today_total }}
+                        Today</span>
                     {% else %}
                     <span class="status-badge pending">Not Marked</span>
                     {% endif %}
