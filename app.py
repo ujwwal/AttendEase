@@ -9,7 +9,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from config import Config, DEFAULT_SUBJECTS
 from models import db, User, Subject, Attendance
 
@@ -427,6 +427,91 @@ def settings():
 @login_required
 def notes():
     return render_template('notes.html', folder_id=GOOGLE_DRIVE_FOLDER_ID)
+
+@app.route('/api/cron/weekly-report')
+def cron_weekly_report():
+    """
+    Cron job to send weekly attendance reports.
+    Allowed only via manual trigger or Vercel Cron (secured by CRON_SECRET if needed, 
+    but for now open as per simple requirements).
+    """
+    try:
+        from email_utils import send_weekly_report_email
+        
+        # Calculate date range for the past week (Monday to Sunday)
+        today = date.today()
+        # If today is Sunday, we want last Monday to today (inclusive or exclusive?)
+        # Let's say report covers last 7 days including today if run in evening, 
+        # or previous week if run in morning.
+        # Assuming run on Sunday morning: cover previous Sunday to Saturday
+        end_date = today - timedelta(days=1) # Yesterday (Saturday)
+        start_date = end_date - timedelta(days=6) # Previous Sunday
+        
+        users = User.query.all()
+        sent_count = 0
+        
+        for user in users:
+            # 1. Get weekly stats
+            weekly_records = Attendance.query.filter(
+                Attendance.user_id == user.id,
+                Attendance.date >= start_date,
+                Attendance.date <= end_date
+            ).all()
+            
+            weekly_present = 0
+            weekly_total = 0
+            subjects_map = {} # subject_id -> {name, attended, total}
+            
+            # Initialize map with all subjects to show 0/0 for subjects not attended
+            all_subjects = Subject.query.all()
+            for sub in all_subjects:
+                subjects_map[sub.id] = {
+                    'name': sub.name, 
+                    'attended': 0, 
+                    'total': 0
+                }
+            
+            for record in weekly_records:
+                if record.subject_id in subjects_map:
+                    subjects_map[record.subject_id]['attended'] += record.lectures_present
+                    subjects_map[record.subject_id]['total'] += record.lectures_total
+                    weekly_present += record.lectures_present
+                    weekly_total += record.lectures_total
+            
+            # Convert map to list
+            subjects_data = list(subjects_map.values())
+            
+            # Only send if there was at least minimal activity or if user is active
+            # (Optional: send even if 0 activity to remind them?) -> Let's send to all.
+            
+            weekly_percentage = int((weekly_present / weekly_total * 100)) if weekly_total > 0 else 0
+            
+            # 2. Get overall stats
+            overall_stats = user.get_attendance_stats()
+            overall_percentage = overall_stats['percentage']
+            
+            # 3. Send email
+            if user.email:
+                send_weekly_report_email(
+                    user.email, 
+                    user.name, 
+                    start_date, 
+                    end_date, 
+                    subjects_data, 
+                    weekly_percentage, 
+                    overall_percentage
+                )
+                sent_count += 1
+                
+        return jsonify({
+            'status': 'success', 
+            'message': f'Weekly reports sent to {sent_count} users.',
+            'period': f'{start_date} to {end_date}'
+        })
+        
+    except Exception as e:
+        print(f"Cron job failed: {e}")
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/health')
 def health_check():

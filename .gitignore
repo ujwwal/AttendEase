@@ -25,6 +25,7 @@ venv/
 ENV/
 env/
 .venv/
+.env
 
 # SQLite database (local development)
 *.db
