@@ -38,12 +38,19 @@ def load_user(user_id):
 with app.app_context():
     try:
         db.create_all()
-        if Subject.query.count() == 0:
-            for subj in DEFAULT_SUBJECTS:
+        # Check and add missing default subjects
+        existing_subjects = {s.name for s in Subject.query.all()}
+        added_new = False
+        for subj in DEFAULT_SUBJECTS:
+            if subj['name'] not in existing_subjects:
                 subject = Subject(name=subj['name'], total_lectures=subj['total_lectures'])
                 db.session.add(subject)
+                added_new = True
+                print(f"Added new subject: {subj['name']}")
+        
+        if added_new:
             db.session.commit()
-            print("Default subjects added!")
+            print("Default subjects updated!")
     except Exception as e:
         print(f"Database initialization error: {e}")
 

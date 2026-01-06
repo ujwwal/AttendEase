@@ -40,4 +40,5 @@ DEFAULT_SUBJECTS = [
     {'name': 'Lab on Data Visualization', 'total_lectures': 40},
     {'name': 'Digital Marketing', 'total_lectures': 40},
     {'name': 'Indian Culture', 'total_lectures': 40},
+    {'name': 'Professional Competency Development', 'total_lectures': 40},
 ]
