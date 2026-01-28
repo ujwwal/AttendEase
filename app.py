@@ -11,7 +11,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, date, timedelta
 from config import Config, DEFAULT_SUBJECTS
-from models import dwhb, User, Subject, Attendance
+from models import db, User, Subject, Attendance
 
 # Create Flask app
 app = Flask(__name__, 
