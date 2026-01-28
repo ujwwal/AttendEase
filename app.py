@@ -34,6 +34,32 @@ GOOGLE_DRIVE_FOLDER_ID = '1aBHLl0Wp8fcApVb4d-ZBUcfOQdsh02KU'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Error handlers
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors."""
+    return render_template('error_404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle 500 errors."""
+    db.session.rollback()  # Rollback any failed transactions
+    return render_template('error_500.html'), 500
+
+@app.errorhandler(Exception)
+def handle_exception(error):
+    """Handle all other uncaught exceptions."""
+    # Log the error
+    print(f"Unhandled exception: {error}")
+    import traceback
+    traceback.print_exc()
+    
+    # Rollback any failed database transactions
+    db.session.rollback()
+    
+    # Return 500 error page
+    return render_template('error_500.html'), 500
+
 # Database initialization flag
 _db_initialized = False
 
@@ -109,7 +135,14 @@ def register():
         user = User(name=name, username=username, email=email)
         user.set_password(password)
         db.session.add(user)
-        db.session.commit()
+        
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database error during registration: {e}")
+            flash('Registration failed. Please try again.', 'error')
+            return render_template('register.html')
         
         # Send welcome email
         try:
@@ -169,7 +202,14 @@ def forgot_password():
         
         if user:
             token = user.generate_reset_token()
-            db.session.commit()
+            
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                print(f"Database error generating reset token: {e}")
+                flash('An error occurred. Please try again.', 'error')
+                return render_template('forgot_password.html')
             
             try:
                 from email_utils import send_password_reset_email
@@ -217,9 +257,16 @@ def reset_password():
         if user and user.verify_reset_token(token):
             user.set_password(new_password)
             user.clear_reset_token()
-            db.session.commit()
-            flash('Password reset successful! Please login with your new password.', 'success')
-            return redirect(url_for('login'))
+            
+            try:
+                db.session.commit()
+                flash('Password reset successful! Please login with your new password.', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
+                db.session.rollback()
+                print(f"Database error resetting password: {e}")
+                flash('An error occurred. Please try again.', 'error')
+                return render_template('reset_password.html', email=email, token=token)
         else:
             flash('Invalid or expired reset code. Please try again.', 'error')
             return render_template('reset_password.html', email=email, token=token)
@@ -372,9 +419,38 @@ def mark_attendance():
                     )
                     db.session.add(record)
         
-        db.session.commit()
-        flash(f'Attendance saved for {attendance_date.strftime("%B %d, %Y")}!', 'success')
-        return redirect(url_for('dashboard'))
+        try:
+            db.session.commit()
+            flash(f'Attendance saved for {attendance_date.strftime("%B %d, %Y")}!', 'success')
+            return redirect(url_for('dashboard'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database error saving attendance: {e}")
+            flash('Failed to save attendance. Please try again.', 'error')
+            # Re-load the form with the data
+            subject_status = []
+            for subject in subjects:
+                record = Attendance.query.filter_by(
+                    user_id=current_user.id,
+                    subject_id=subject.id,
+                    date=target_date
+                ).first()
+                
+                if record is None:
+                    lectures_total = 0
+                    lectures_present = 0
+                else:
+                    lectures_total = record.lectures_total
+                    lectures_present = record.lectures_present
+                
+                subject_status.append({
+                    'id': subject.id,
+                    'name': subject.name,
+                    'lectures_total': lectures_total,
+                    'lectures_present': lectures_present,
+                    'already_marked': record is not None
+                })
+            return render_template('mark_attendance.html', subjects=subject_status, today=today, target_date=target_date)
     
     # GET request - load data for target_date
     subject_status = []
@@ -439,9 +515,16 @@ def settings():
                 return redirect(url_for('settings'))
             
             current_user.set_password(new_password)
-            db.session.commit()
-            flash('Password changed successfully!', 'success')
-            return redirect(url_for('settings'))
+            
+            try:
+                db.session.commit()
+                flash('Password changed successfully!', 'success')
+                return redirect(url_for('settings'))
+            except Exception as e:
+                db.session.rollback()
+                print(f"Database error changing password: {e}")
+                flash('Failed to change password. Please try again.', 'error')
+                return redirect(url_for('settings'))
         
         for subject in subjects:
             new_lectures = request.form.get(f'lectures_{subject.id}', subject.total_lectures)
@@ -453,9 +536,15 @@ def settings():
                 new_lectures = 40
             subject.total_lectures = new_lectures
         
-        db.session.commit()
-        flash('Settings updated successfully!', 'success')
-        return redirect(url_for('settings'))
+        try:
+            db.session.commit()
+            flash('Settings updated successfully!', 'success')
+            return redirect(url_for('settings'))
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database error updating settings: {e}")
+            flash('Failed to update settings. Please try again.', 'error')
+            return redirect(url_for('settings'))
     
     return render_template('settings.html', subjects=subjects)
 
