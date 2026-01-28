@@ -34,8 +34,15 @@ GOOGLE_DRIVE_FOLDER_ID = '1aBHLl0Wp8fcApVb4d-ZBUcfOQdsh02KU'
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# Initialize database on startup
-with app.app_context():
+# Database initialization flag
+_db_initialized = False
+
+def init_database():
+    """Initialize database tables and default subjects."""
+    global _db_initialized
+    if _db_initialized:
+        return
+    
     try:
         db.create_all()
         # Check and add missing default subjects
@@ -51,8 +58,14 @@ with app.app_context():
         if added_new:
             db.session.commit()
             print("Default subjects updated!")
+        _db_initialized = True
     except Exception as e:
         print(f"Database initialization error: {e}")
+
+@app.before_request
+def ensure_db_initialized():
+    """Ensure database is initialized before handling any request."""
+    init_database()
 
 # Routes
 @app.route('/')

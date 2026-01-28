@@ -22,12 +22,16 @@ class Config:
     SQLALCHEMY_DATABASE_URI = database_url or 'sqlite:///attendance.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Engine options for PostgreSQL connection pooling (works with Neon serverless)
+    # Engine options optimized for Neon serverless + Vercel
     SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 300,
-        'pool_size': 5,
-        'max_overflow': 10,
+        'pool_pre_ping': True,      # Check connection health before use
+        'pool_recycle': 300,        # Recycle connections after 5 minutes
+        'pool_size': 1,             # Minimal pool for serverless (each function is isolated)
+        'max_overflow': 2,          # Allow only 2 extra connections
+        'connect_args': {
+            'connect_timeout': 10,  # 10 second connection timeout
+            'options': '-c statement_timeout=30000'  # 30 second query timeout
+        }
     }
 
 # Default subjects configuration (Fixed - cannot be edited by users)
