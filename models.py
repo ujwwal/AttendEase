@@ -104,13 +104,18 @@ class Subject(db.Model):
         }
 
 
+def _get_current_date():
+    """Helper function to get current date for database default."""
+    return datetime.utcnow().date()
+
+
 class Attendance(db.Model):
     __tablename__ = 'attendance'
     
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
-    date = db.Column(db.Date, nullable=False, default=datetime.utcnow().date)
+    date = db.Column(db.Date, nullable=False, default=_get_current_date)
     # Number of lectures attended (0 to N)
     lectures_present = db.Column(db.Integer, default=1)
     # Total number of lectures that occurred (1 to N)
