@@ -74,6 +74,8 @@ def init_database():
     if _db_initialized:
         return
     
+# Initialize database on startup
+with app.app_context():
     try:
         db.create_all()
         # Check and add missing default subjects
@@ -89,14 +91,8 @@ def init_database():
         if added_new:
             db.session.commit()
             print("Default subjects updated!")
-        _db_initialized = True
     except Exception as e:
         print(f"Database initialization error: {e}")
-
-@app.before_request
-def ensure_db_initialized():
-    """Ensure database is initialized before handling any request."""
-    init_database()
 
 # Routes
 @app.route('/')
@@ -284,34 +280,18 @@ def dashboard():
     subjects = Subject.query.all()
     today = date.today()
     
-    # OPTIMIZATION: Fetch ALL attendance records for this user in ONE query
-    all_records = Attendance.query.filter_by(user_id=current_user.id).all()
-    
-    # Group records by subject_id for fast lookup
-    records_by_subject = {}
-    for r in all_records:
-        if r.subject_id not in records_by_subject:
-            records_by_subject[r.subject_id] = []
-        records_by_subject[r.subject_id].append(r)
-    
     subject_data = []
     total_attended = 0
     total_classes = 0
     
     for subject in subjects:
-        # Get records from memory instead of DB
-        subj_records = records_by_subject.get(subject.id, [])
+        stats = subject.get_user_attendance(current_user.id)
         
-        # Calculate stats in Python
-        attended = sum(r.lectures_present for r in subj_records)
-        total_marked = sum(r.lectures_total for r in subj_records)
-        stats = {
-            'attended': attended,
-            'total_marked': total_marked
-        }
-        
-        # Find today's record in memory
-        today_record = next((r for r in subj_records if r.date == today), None)
+        today_record = Attendance.query.filter_by(
+            user_id=current_user.id,
+            subject_id=subject.id,
+            date=today
+        ).first()
         
         subject_data.append({
             'id': subject.id,
@@ -322,31 +302,31 @@ def dashboard():
             'today_total': today_record.lectures_total if today_record else 0
         })
         
-        total_attended += attended
-        total_classes += total_marked
+        total_attended += stats['attended']
+        total_classes += stats['total_marked']
     
     overall_percentage = (total_attended / total_classes * 100) if total_classes > 0 else 0
     
-    # Build recent history from the same pre-fetched records
-    history_map = {}
-    for r in all_records:
-        d_str = r.date.isoformat()
-        if d_str not in history_map:
-            history_map[d_str] = {
-                'date_obj': r.date,
-                'present_count': 0,
-                'fully_present_count': 0,
-                'total_subjects': 0
-            }
-        history_map[d_str]['total_subjects'] += 1
-        if r.lectures_present > 0:
-            history_map[d_str]['present_count'] += 1
-        if r.lectures_present == r.lectures_total and r.lectures_total > 0:
-            history_map[d_str]['fully_present_count'] += 1
+    # Get recent history (last 5 distinct dates)
+    recent_dates = db.session.query(Attendance.date).filter_by(user_id=current_user.id)\
+        .distinct().order_by(Attendance.date.desc()).limit(5).all()
     
-    # Sort by date descending and take top 5
-    sorted_dates = sorted(history_map.keys(), reverse=True)[:5]
-    recent_history = {d: history_map[d] for d in sorted_dates}
+    recent_history = {}
+    for r_date in recent_dates:
+        d = r_date[0]
+        date_str = d.isoformat()
+        
+        # Get stats for this day
+        day_records = Attendance.query.filter_by(user_id=current_user.id, date=d).all()
+        present_count = sum(1 for r in day_records if r.lectures_present > 0)
+        fully_present_count = sum(1 for r in day_records if r.lectures_present == r.lectures_total)
+        
+        recent_history[date_str] = {
+            'date_obj': d,
+            'present_count': present_count,
+            'fully_present_count': fully_present_count,
+            'total_subjects': len(day_records)
+        }
 
     return render_template('dashboard.html', 
                          subjects=subject_data, 
