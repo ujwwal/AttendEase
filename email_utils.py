@@ -71,7 +71,7 @@ def send_welcome_email(user_email, user_name, erp_number, password):
                 </div>
                 
                 <div style="text-align: center;">
-                    <a href="https://www.attendease.live/login" class="cta-button">Login to Your Account →</a>
+                    <a href="https://attendease.vercel.app/login" class="cta-button">Login to Your Account →</a>
                 </div>
                 
                 <div class="footer">
@@ -270,7 +270,7 @@ def send_weekly_report_email(user_email, user_name, start_date, end_date, subjec
                         {subject_rows}
                     </table>
 
-                    <a href="https://www.attendease.live/dashboard" class="cta-button">View Detailed Dashboard</a>
+                    <a href="https://attendease.vercel.app/dashboard" class="cta-button">View Detailed Dashboard</a>
 
                     <div class="attendance-warning">
                         ⚠️ Reminder: Please maintain your attendance above 75% to avoid any academic penalties.
