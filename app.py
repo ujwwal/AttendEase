@@ -49,6 +49,11 @@ def internal_error(error):
 @app.errorhandler(Exception)
 def handle_exception(error):
     """Handle all other uncaught exceptions."""
+    # Pass through HTTP exceptions (like redirects)
+    from werkzeug.exceptions import HTTPException
+    if isinstance(error, HTTPException):
+        return error
+    
     # Log the error
     print(f"Unhandled exception: {error}")
     import traceback
