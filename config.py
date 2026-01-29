@@ -42,7 +42,11 @@ class Config:
         sqlite_dir = os.path.dirname(sqlite_path)
         if sqlite_dir:
             os.makedirs(sqlite_dir, exist_ok=True)
-        SQLALCHEMY_DATABASE_URI = f"sqlite:///{sqlite_path}"
+        # Normalize path for SQLite URI (handles Windows paths too)
+        sqlite_uri_path = sqlite_path.replace('\\', '/')
+        if ':' in sqlite_uri_path and not sqlite_uri_path.startswith('/'):
+            sqlite_uri_path = f"/{sqlite_uri_path}"
+        SQLALCHEMY_DATABASE_URI = f"sqlite:///{sqlite_uri_path}"
         SQLALCHEMY_ENGINE_OPTIONS = {}
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
