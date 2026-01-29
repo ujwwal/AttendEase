@@ -74,8 +74,12 @@ def init_database():
     if _db_initialized:
         return
     
-# Initialize database on startup
-with app.app_context():
+def init_database():
+    """Initialize database tables and default subjects."""
+    global _db_initialized
+    if _db_initialized:
+        return
+
     try:
         db.create_all()
         # Check and add missing default subjects
@@ -87,12 +91,18 @@ with app.app_context():
                 db.session.add(subject)
                 added_new = True
                 print(f"Added new subject: {subj['name']}")
-        
+
         if added_new:
             db.session.commit()
             print("Default subjects updated!")
+        _db_initialized = True
     except Exception as e:
         print(f"Database initialization error: {e}")
+
+
+@app.before_request
+def ensure_database_initialized():
+    init_database()
 
 # Routes
 @app.route('/')
