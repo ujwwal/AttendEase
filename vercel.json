@@ -3,7 +3,16 @@
     "builds": [
         {
             "src": "api/index.py",
-            "use": "@vercel/python"
+            "use": "@vercel/python",
+            "config": {
+                "includeFiles": [
+                    "app.py",
+                    "config.py",
+                    "models.py",
+                    "email_utils.py",
+                    "templates/**"
+                ]
+            }
         },
         {
             "src": "static/**",
