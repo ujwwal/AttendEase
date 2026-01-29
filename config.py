@@ -33,10 +33,23 @@ class Config:
             'max_overflow': 2,          # Allow only 2 extra connections
         }
         if SQLALCHEMY_DATABASE_URI.startswith('postgresql://') or SQLALCHEMY_DATABASE_URI.startswith('postgresql+'):
-            SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = {
+            # Detect pooled connections (e.g., Neon with -pooler suffix or port 6543)
+            # Pooled connections don't support statement_timeout in connect_args
+            is_pooled_connection = (
+                '-pooler' in SQLALCHEMY_DATABASE_URI or 
+                ':6543/' in SQLALCHEMY_DATABASE_URI
+            )
+            
+            connect_args = {
                 'connect_timeout': 10,  # 10 second connection timeout
-                'options': '-c statement_timeout=30000'  # 30 second query timeout
             }
+            
+            # Only add statement_timeout for non-pooled connections
+            # Option B: Avoid passing pooled-connection-incompatible statement_timeout
+            if not is_pooled_connection:
+                connect_args['options'] = '-c statement_timeout=30000'  # 30 second query timeout
+            
+            SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = connect_args
     else:
         # Use a writable path for SQLite (e.g., Vercel serverless)
         sqlite_path = os.environ.get(
