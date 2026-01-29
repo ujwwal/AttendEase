@@ -5,22 +5,24 @@
             "src": "api/index.py",
             "use": "@vercel/python",
             "config": {
-                "runtime": "python3.12",
                 "includeFiles": [
                     "app.py",
                     "config.py",
                     "models.py",
                     "email_utils.py",
-                    "templates/**",
-                    "static/**"
+                    "templates/**"
                 ]
             }
+        },
+        {
+            "src": "static/**",
+            "use": "@vercel/static"
         }
     ],
     "routes": [
         {
             "src": "/static/(.*)",
-            "dest": "/api/index.py"
+            "dest": "/static/$1"
         },
         {
             "src": "/(.*)",
