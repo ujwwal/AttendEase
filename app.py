@@ -95,6 +95,8 @@ def init_database():
             if added_new:
                 db.session.commit()
                 print("Default subjects updated!")
+            else:
+                db.session.rollback()
             _db_initialized = True
         except Exception as e:
             db.session.rollback()
