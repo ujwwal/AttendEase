@@ -5,16 +5,20 @@ class Config:
     
     # Support multiple database providers:
     # - Neon: DATABASE_URL
-    # - Vercel Postgres: POSTGRES_URL
+    # - Vercel Postgres: POSTGRES_URL / POSTGRES_URL_NON_POOLING
     # - Other providers: DATABASE_URL
-    database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+    database_url = (
+        os.environ.get('DATABASE_URL')
+        or os.environ.get('POSTGRES_URL_NON_POOLING')
+        or os.environ.get('POSTGRES_URL')
+    )
     
     # Handle postgres:// -> postgresql:// (required by SQLAlchemy)
     if database_url and database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     
-    # Add sslmode for Neon if not already present (Neon requires SSL)
-    if database_url and 'neon' in database_url and 'sslmode' not in database_url:
+    # Add sslmode for hosted Postgres in Vercel if not already present
+    if database_url and os.environ.get('VERCEL') and 'sslmode' not in database_url:
         separator = '&' if '?' in database_url else '?'
         database_url = f"{database_url}{separator}sslmode=require"
     
