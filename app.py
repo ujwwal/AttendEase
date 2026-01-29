@@ -3,6 +3,7 @@ Flask Application Entry Point
 """
 import sys
 import os
+import threading
 
 # Get the absolute path to the project root
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -67,37 +68,37 @@ def handle_exception(error):
 
 # Database initialization flag
 _db_initialized = False
+_db_init_lock = threading.Lock()
 
 def init_database():
     """Initialize database tables and default subjects."""
     global _db_initialized
     if _db_initialized:
         return
-    
-def init_database():
-    """Initialize database tables and default subjects."""
-    global _db_initialized
-    if _db_initialized:
-        return
 
-    try:
-        db.create_all()
-        # Check and add missing default subjects
-        existing_subjects = {s.name for s in Subject.query.all()}
-        added_new = False
-        for subj in DEFAULT_SUBJECTS:
-            if subj['name'] not in existing_subjects:
-                subject = Subject(name=subj['name'], total_lectures=subj['total_lectures'])
-                db.session.add(subject)
-                added_new = True
-                print(f"Added new subject: {subj['name']}")
+    with _db_init_lock:
+        if _db_initialized:
+            return
 
-        if added_new:
-            db.session.commit()
-            print("Default subjects updated!")
-        _db_initialized = True
-    except Exception as e:
-        print(f"Database initialization error: {e}")
+        try:
+            db.create_all()
+            # Check and add missing default subjects
+            existing_subjects = {s.name for s in Subject.query.all()}
+            added_new = False
+            for subj in DEFAULT_SUBJECTS:
+                if subj['name'] not in existing_subjects:
+                    subject = Subject(name=subj['name'], total_lectures=subj['total_lectures'])
+                    db.session.add(subject)
+                    added_new = True
+                    print(f"Added new subject: {subj['name']}")
+
+            if added_new:
+                db.session.commit()
+                print("Default subjects updated!")
+            _db_initialized = True
+        except Exception as e:
+            db.session.rollback()
+            print(f"Database initialization error: {e}")
 
 
 @app.before_request
