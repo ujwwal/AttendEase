@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
@@ -35,9 +36,14 @@ class Config:
         if SQLALCHEMY_DATABASE_URI.startswith('postgresql://') or SQLALCHEMY_DATABASE_URI.startswith('postgresql+'):
             # Detect pooled connections (e.g., Neon with -pooler suffix or port 6543)
             # Pooled connections don't support statement_timeout in connect_args
+            parsed_url = urlparse(SQLALCHEMY_DATABASE_URI)
+            hostname = parsed_url.hostname or ''
+            port = parsed_url.port or 5432
+            
             is_pooled_connection = (
-                '-pooler' in SQLALCHEMY_DATABASE_URI or 
-                ':6543/' in SQLALCHEMY_DATABASE_URI
+                hostname.endswith('-pooler') or 
+                '-pooler.' in hostname or
+                port == 6543
             )
             
             connect_args = {
