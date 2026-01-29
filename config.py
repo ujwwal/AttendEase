@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
@@ -33,10 +34,29 @@ class Config:
             'max_overflow': 2,          # Allow only 2 extra connections
         }
         if SQLALCHEMY_DATABASE_URI.startswith('postgresql://') or SQLALCHEMY_DATABASE_URI.startswith('postgresql+'):
-            SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = {
+            # Detect pooled connections that don't support statement_timeout in connect_args
+            # Common patterns: Neon pooled URLs contain "-pooler." in hostname (e.g., ep-xxx-pooler.region.neon.tech)
+            # or use port 6543 (common pooled connection port instead of standard 5432)
+            parsed_url = urlparse(SQLALCHEMY_DATABASE_URI)
+            hostname = parsed_url.hostname or ''
+            port = parsed_url.port or 5432
+            
+            is_pooled_connection = (
+                '-pooler.' in hostname or   # Neon pooled: ep-xxx-pooler.region.neon.tech
+                hostname.endswith('-pooler') or  # Edge case: hostname ends with -pooler (no domain)
+                port == 6543                # Pooled connection port
+            )
+            
+            connect_args = {
                 'connect_timeout': 10,  # 10 second connection timeout
-                'options': '-c statement_timeout=30000'  # 30 second query timeout
             }
+            
+            # Only add statement_timeout for non-pooled (direct) connections
+            # Pooled connections reject this option causing 500 errors during login
+            if not is_pooled_connection:
+                connect_args['options'] = '-c statement_timeout=30000'  # 30 second query timeout
+            
+            SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = connect_args
     else:
         # Use a writable path for SQLite (e.g., Vercel serverless)
         sqlite_path = os.environ.get(
