@@ -61,8 +61,9 @@ class User(UserMixin, db.Model):
             query = query.filter_by(subject_id=subject_id)
         
         result = query.first()
-        total = result.total if result else 0
-        present = result.present if result else 0
+        # Ensure we get integer values (handle different DB return types)
+        total = int(result.total) if result and result.total else 0
+        present = int(result.present) if result and result.present else 0
         
         percentage = (present / total * 100) if total > 0 else 0
         return {'total': total, 'present': present, 'percentage': round(percentage, 1)}
@@ -88,8 +89,9 @@ class Subject(db.Model):
             func.coalesce(func.sum(Attendance.lectures_total), 0).label('total')
         ).filter_by(user_id=user_id, subject_id=self.id).first()
         
-        present = result.present if result else 0
-        total = result.total if result else 0
+        # Ensure we get integer values (handle different DB return types)
+        present = int(result.present) if result and result.present else 0
+        total = int(result.total) if result and result.total else 0
         percentage = (present / total * 100) if total > 0 else 0
         
         # Calculate projected attendance

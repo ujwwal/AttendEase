@@ -101,6 +101,10 @@ def init_database():
         except Exception as e:
             db.session.rollback()
             print(f"Database initialization error: {e}")
+            import traceback
+            traceback.print_exc()
+            # Mark as initialized to avoid repeated failures, but log the error
+            _db_initialized = True
 
 
 @app.before_request
@@ -290,64 +294,71 @@ def reset_password():
 @app.route('/dashboard')
 @login_required
 def dashboard():
-    subjects = Subject.query.all()
-    today = date.today()
-    
-    subject_data = []
-    total_attended = 0
-    total_classes = 0
-    
-    for subject in subjects:
-        stats = subject.get_user_attendance(current_user.id)
+    try:
+        subjects = Subject.query.all()
+        today = date.today()
         
-        today_record = Attendance.query.filter_by(
-            user_id=current_user.id,
-            subject_id=subject.id,
-            date=today
-        ).first()
+        subject_data = []
+        total_attended = 0
+        total_classes = 0
         
-        subject_data.append({
-            'id': subject.id,
-            'name': subject.name,
-            'stats': stats,
-            'marked_today': today_record is not None,
-            'today_present': today_record.lectures_present if today_record else 0,
-            'today_total': today_record.lectures_total if today_record else 0
-        })
+        for subject in subjects:
+            stats = subject.get_user_attendance(current_user.id)
+            
+            today_record = Attendance.query.filter_by(
+                user_id=current_user.id,
+                subject_id=subject.id,
+                date=today
+            ).first()
+            
+            subject_data.append({
+                'id': subject.id,
+                'name': subject.name,
+                'stats': stats,
+                'marked_today': today_record is not None,
+                'today_present': today_record.lectures_present if today_record else 0,
+                'today_total': today_record.lectures_total if today_record else 0
+            })
+            
+            total_attended += stats['attended']
+            total_classes += stats['total_marked']
         
-        total_attended += stats['attended']
-        total_classes += stats['total_marked']
-    
-    overall_percentage = (total_attended / total_classes * 100) if total_classes > 0 else 0
-    
-    # Get recent history (last 5 distinct dates)
-    recent_dates = db.session.query(Attendance.date).filter_by(user_id=current_user.id)\
-        .distinct().order_by(Attendance.date.desc()).limit(5).all()
-    
-    recent_history = {}
-    for r_date in recent_dates:
-        d = r_date[0]
-        date_str = d.isoformat()
+        overall_percentage = (total_attended / total_classes * 100) if total_classes > 0 else 0
         
-        # Get stats for this day
-        day_records = Attendance.query.filter_by(user_id=current_user.id, date=d).all()
-        present_count = sum(1 for r in day_records if r.lectures_present > 0)
-        fully_present_count = sum(1 for r in day_records if r.lectures_present == r.lectures_total)
+        # Get recent history (last 5 distinct dates)
+        recent_dates = db.session.query(Attendance.date).filter_by(user_id=current_user.id)\
+            .distinct().order_by(Attendance.date.desc()).limit(5).all()
         
-        recent_history[date_str] = {
-            'date_obj': d,
-            'present_count': present_count,
-            'fully_present_count': fully_present_count,
-            'total_subjects': len(day_records)
-        }
+        recent_history = {}
+        for r_date in recent_dates:
+            d = r_date[0]
+            date_str = d.isoformat()
+            
+            # Get stats for this day
+            day_records = Attendance.query.filter_by(user_id=current_user.id, date=d).all()
+            present_count = sum(1 for r in day_records if r.lectures_present > 0)
+            fully_present_count = sum(1 for r in day_records if r.lectures_present == r.lectures_total)
+            
+            recent_history[date_str] = {
+                'date_obj': d,
+                'present_count': present_count,
+                'fully_present_count': fully_present_count,
+                'total_subjects': len(day_records)
+            }
 
-    return render_template('dashboard.html', 
-                         subjects=subject_data, 
-                         overall_percentage=round(overall_percentage, 1),
-                         total_attended=total_attended,
-                         total_classes=total_classes,
-                         today=today,
-                         recent_history=recent_history)
+        return render_template('dashboard.html', 
+                             subjects=subject_data, 
+                             overall_percentage=round(overall_percentage, 1),
+                             total_attended=total_attended,
+                             total_classes=total_classes,
+                             today=today,
+                             recent_history=recent_history)
+    except Exception as e:
+        print(f"Dashboard error: {e}")
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        raise
 
 @app.route('/mark-attendance', methods=['GET', 'POST'])
 @login_required
