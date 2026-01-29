@@ -21,24 +21,27 @@ class Config:
     # Use PostgreSQL in production, SQLite for local development/serverless fallback
     if database_url:
         SQLALCHEMY_DATABASE_URI = database_url
-        # Engine options optimized for Neon serverless + Vercel
+        # Engine options optimized for PostgreSQL (Neon/Vercel)
         SQLALCHEMY_ENGINE_OPTIONS = {
             'pool_pre_ping': True,      # Check connection health before use
             'pool_recycle': 300,        # Recycle connections after 5 minutes
             'pool_size': 1,             # Minimal pool for serverless (each function is isolated)
             'max_overflow': 2,          # Allow only 2 extra connections
-            'connect_args': {
+        }
+        if SQLALCHEMY_DATABASE_URI.startswith('postgresql://') or SQLALCHEMY_DATABASE_URI.startswith('postgresql+'):
+            SQLALCHEMY_ENGINE_OPTIONS['connect_args'] = {
                 'connect_timeout': 10,  # 10 second connection timeout
                 'options': '-c statement_timeout=30000'  # 30 second query timeout
             }
-        }
     else:
         # Use a writable path for SQLite (e.g., Vercel serverless)
         sqlite_path = os.environ.get(
             'SQLITE_PATH',
             os.path.join('/tmp' if os.environ.get('VERCEL') else os.path.dirname(__file__), 'attendance.db')
         )
-        os.makedirs(os.path.dirname(sqlite_path), exist_ok=True)
+        sqlite_dir = os.path.dirname(sqlite_path)
+        if sqlite_dir:
+            os.makedirs(sqlite_dir, exist_ok=True)
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{sqlite_path}"
         SQLALCHEMY_ENGINE_OPTIONS = {}
     
