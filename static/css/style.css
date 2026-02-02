@@ -195,6 +195,51 @@ a:hover {
 }
 
 /* ============================================
+   Footer
+   ============================================ */
+.app-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+}
+
+.app-footer p {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.app-footer .heart {
+    color: #ef4444;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+.app-footer .github-link {
+    display: flex;
+    align-items: center;
+    color: var(--text-secondary);
+    transition: all var(--transition-base);
+}
+
+.app-footer .github-link:hover {
+    color: var(--text-primary);
+    transform: scale(1.1);
+}
+
+/* ============================================
    Main Content
    ============================================ */
 .main-content {
