@@ -4,6 +4,10 @@ from urllib.parse import urlparse
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-change-in-production'
     
+    # Gemini AI Configuration
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
+    GEMINI_MODEL = 'gemini-3-pro-preview'  # Using Gemini 3 Pro
+    
     # Support multiple database providers:
     # - Neon: DATABASE_URL
     # - Vercel Postgres: POSTGRES_URL / POSTGRES_URL_NON_POOLING
