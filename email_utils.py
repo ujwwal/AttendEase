@@ -14,6 +14,72 @@ try:
 except ImportError:
     GENAI_AVAILABLE = False
 
+def send_email_verification_otp(user_email, user_name, otp):
+    """
+    Send an OTP for email verification during signup or for existing users.
+    """
+    try:
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: 'Inter', Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 40px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .logo {{ font-size: 48px; margin-bottom: 10px; }}
+                h1 {{ color: #f8fafc; margin: 0; font-size: 24px; }}
+                .otp-box {{ background: #334155; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }}
+                .otp {{ font-size: 36px; font-family: monospace; color: #10b981; letter-spacing: 8px; font-weight: bold; }}
+                .otp-info {{ color: #94a3b8; margin-top: 12px; font-size: 13px; }}
+                .warning {{ background: #451a03; border: 1px solid #f59e0b; color: #fcd34d; padding: 12px; border-radius: 8px; margin-top: 20px; font-size: 13px; }}
+                .footer {{ text-align: center; margin-top: 30px; color: #64748b; font-size: 12px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">📧</div>
+                    <h1>Verify Your Email</h1>
+                </div>
+                
+                <p style="color: #e2e8f0;">Hi <strong>{user_name}</strong>,</p>
+                <p style="color: #cbd5e1;">Please use the following 6-digit code to verify your email address:</p>
+                
+                <div class="otp-box">
+                    <div class="otp">{otp}</div>
+                    <div class="otp-info">This code expires in 15 minutes</div>
+                </div>
+                
+                <p style="color: #cbd5e1;">Enter this code in the verification page to confirm your email address.</p>
+                
+                <div class="warning">
+                    🔒 <strong>Security:</strong> Never share this code with anyone. We will never ask you for this code via email or phone.
+                </div>
+                
+                <div class="footer">
+                    <p>© 2024 AttendEase. Track your attendance, ace your semester!</p>
+                    <p>Made with ❤ by Ujjwal Gupta</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": "AttendEase <no-reply@attendease.live>",
+            "to": [user_email],
+            "subject": f"🔐 Verify Your Email - OTP: {otp}",
+            "html": html_content
+        }
+        
+        email = resend.Emails.send(params)
+        print(f"Email verification OTP sent to {user_email}: {email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email verification OTP: {e}")
+        return False
+
 def generate_ai_summary(user_name, subjects_data, weekly_percentage, overall_percentage):
     """
     Generate an AI-powered personalized summary for the weekly report.
@@ -60,6 +126,66 @@ Rules:
     except Exception as e:
         print(f"Error generating AI summary: {e}")
         return None
+
+def send_email_verification_otp(user_email, user_name, otp):
+    """
+    Send an OTP for email verification.
+    """
+    try:
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body {{ font-family: 'Inter', Arial, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }}
+                .container {{ max-width: 600px; margin: 0 auto; background: #1e293b; border-radius: 16px; padding: 40px; }}
+                .header {{ text-align: center; margin-bottom: 30px; }}
+                .logo {{ font-size: 48px; margin-bottom: 10px; }}
+                h1 {{ color: #f8fafc; margin: 0; font-size: 24px; }}
+                .otp-box {{ background: #334155; border-radius: 12px; padding: 24px; margin: 24px 0; text-align: center; }}
+                .otp {{ font-size: 36px; font-family: monospace; color: #10b981; letter-spacing: 8px; font-weight: bold; }}
+                .footer {{ text-align: center; margin-top: 30px; color: #64748b; font-size: 12px; }}
+                .warning {{ color: #fbbf24; font-size: 13px; margin-top: 16px; }}
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <div class="logo">📧</div>
+                    <h1>Verify Your Email</h1>
+                </div>
+                
+                <p style="color: #e2e8f0;">Hi <strong>{user_name}</strong>,</p>
+                <p style="color: #94a3b8;">Please use the following OTP to verify your email address:</p>
+                
+                <div class="otp-box">
+                    <div class="otp">{otp}</div>
+                    <p style="color: #64748b; margin-top: 12px; font-size: 13px;">This code expires in 15 minutes</p>
+                </div>
+                
+                <p class="warning" style="text-align: center;">If you didn't request this, you can safely ignore this email.</p>
+                
+                <div class="footer">
+                    <p>© 2024 AttendEase</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        
+        params = {
+            "from": "AttendEase <no-reply@attendease.live>",
+            "to": [user_email],
+            "subject": "📧 Verify Your Email - AttendEase",
+            "html": html_content
+        }
+        
+        email = resend.Emails.send(params)
+        print(f"Email verification OTP sent to {user_email}: {email}")
+        return True
+    except Exception as e:
+        print(f"Failed to send email verification OTP: {e}")
+        return False
 
 def send_welcome_email(user_email, user_name, erp_number, password):
     """

@@ -194,6 +194,10 @@ def register():
         
         user = User(name=name, username=username, email=email)
         user.set_password(password)
+        
+        # Generate email verification OTP
+        otp = user.generate_email_otp()
+        
         db.session.add(user)
         
         try:
@@ -204,6 +208,13 @@ def register():
             flash('Registration failed. Please try again.', 'error')
             return render_template('register.html')
         
+        # Send verification OTP email
+        try:
+            from email_utils import send_email_verification_otp
+            send_email_verification_otp(email, name, otp)
+        except Exception as e:
+            print(f"Failed to send verification OTP: {e}")
+        
         # Send welcome email
         try:
             from email_utils import send_welcome_email
@@ -211,8 +222,10 @@ def register():
         except Exception as e:
             print(f"Failed to send welcome email: {e}")
         
-        flash('Registration successful! Check your email for account details.', 'success')
-        return redirect(url_for('login'))
+        # Log in the user and redirect to verification
+        login_user(user)
+        flash('Registration successful! Please verify your email with the OTP sent to your inbox.', 'success')
+        return redirect(url_for('verify_email'))
     
     return render_template('register.html')
 
@@ -244,6 +257,54 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
+
+# Email Verification Routes
+@app.route('/verify-email', methods=['GET', 'POST'])
+@login_required
+def verify_email():
+    if current_user.email_verified:
+        flash('Your email is already verified!', 'info')
+        return redirect(url_for('dashboard'))
+    
+    if request.method == 'POST':
+        otp = request.form.get('otp', '').strip()
+        
+        if not otp:
+            flash('Please enter the OTP.', 'error')
+            return render_template('verify_email.html')
+        
+        if current_user.verify_email_otp(otp):
+            current_user.clear_email_otp()
+            db.session.commit()
+            flash('Email verified successfully! 🎉', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid or expired OTP. Please try again.', 'error')
+            return render_template('verify_email.html')
+    
+    return render_template('verify_email.html')
+
+@app.route('/resend-verification-otp', methods=['POST'])
+@login_required
+def resend_verification_otp():
+    if current_user.email_verified:
+        flash('Your email is already verified!', 'info')
+        return redirect(url_for('dashboard'))
+    
+    # Generate new OTP
+    otp = current_user.generate_email_otp()
+    db.session.commit()
+    
+    # Send OTP email
+    try:
+        from email_utils import send_email_verification_otp
+        send_email_verification_otp(current_user.email, current_user.name, otp)
+        flash('A new OTP has been sent to your email.', 'success')
+    except Exception as e:
+        print(f"Failed to send verification OTP: {e}")
+        flash('Failed to send OTP. Please try again.', 'error')
+    
+    return redirect(url_for('verify_email'))
 
 # Password Reset Routes
 @app.route('/forgot-password', methods=['GET', 'POST'])

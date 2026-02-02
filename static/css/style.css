@@ -240,6 +240,58 @@ a:hover {
 }
 
 /* ============================================
+   Email Verification Banner
+   ============================================ */
+.verification-banner {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.15) 100%);
+    border-bottom: 1px solid rgba(251, 191, 36, 0.3);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+.banner-icon {
+    font-size: 1.25rem;
+}
+
+.banner-text {
+    color: #fbbf24;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.banner-btn {
+    background: #f59e0b;
+    color: #1e293b;
+    padding: 6px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all var(--transition-base);
+}
+
+.banner-btn:hover {
+    background: #fbbf24;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 768px) {
+    .banner-content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--spacing-sm);
+    }
+}
+
+/* ============================================
    Main Content
    ============================================ */
 .main-content {

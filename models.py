@@ -16,6 +16,11 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
+    # Email verification fields
+    email_verified = db.Column(db.Boolean, default=False)
+    email_otp = db.Column(db.String(6), nullable=True)
+    email_otp_expires = db.Column(db.DateTime, nullable=True)
+    
     # Password reset fields
     reset_token = db.Column(db.String(6), nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
@@ -28,6 +33,26 @@ class User(UserMixin, db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def generate_email_otp(self):
+        """Generate a 6-digit OTP for email verification valid for 15 minutes"""
+        self.email_otp = ''.join([str(secrets.randbelow(10)) for _ in range(6)])
+        self.email_otp_expires = datetime.utcnow() + timedelta(minutes=15)
+        return self.email_otp
+    
+    def verify_email_otp(self, otp):
+        """Verify if the email OTP is valid and not expired"""
+        if not self.email_otp or not self.email_otp_expires:
+            return False
+        if datetime.utcnow() > self.email_otp_expires:
+            return False
+        return self.email_otp == otp
+    
+    def clear_email_otp(self):
+        """Clear the email OTP after successful verification"""
+        self.email_otp = None
+        self.email_otp_expires = None
+        self.email_verified = True
     
     def generate_reset_token(self):
         """Generate a 6-digit reset token valid for 15 minutes"""

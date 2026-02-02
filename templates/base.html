@@ -53,6 +53,17 @@
     </nav>
     {% endif %}
 
+    {% if current_user.is_authenticated and not current_user.email_verified and request.endpoint != 'verify_email' %}
+    <!-- Email Verification Banner -->
+    <div class="verification-banner">
+        <div class="banner-content">
+            <span class="banner-icon">📧</span>
+            <span class="banner-text">Please verify your email address to access all features.</span>
+            <a href="{{ url_for('verify_email') }}" class="banner-btn">Verify Now</a>
+        </div>
+    </div>
+    {% endif %}
+
     <main class="main-content{% if request.endpoint == 'chat' %} chat-main{% endif %}">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}

@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Verify Email - AttendEase{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-card">
+        <div class="auth-header">
+            <div class="auth-icon">📧</div>
+            <h1>Verify Your Email</h1>
+            <p>We've sent a 6-digit OTP to <strong>{{ current_user.email }}</strong></p>
+        </div>
+
+        <form method="POST" class="auth-form">
+            <div class="form-group">
+                <label for="otp">Enter OTP</label>
+                <input type="text" id="otp" name="otp" placeholder="Enter 6-digit code" 
+                       maxlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+                <span>Verify Email</span>
+                <span class="btn-icon">✓</span>
+            </button>
+        </form>
+
+        <div class="auth-divider">
+            <span>Didn't receive the code?</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('resend_verification_otp') }}" class="resend-form">
+            <button type="submit" class="btn btn-outline btn-full">
+                <span>Resend OTP</span>
+                <span class="btn-icon">🔄</span>
+            </button>
+        </form>
+
+        <p class="auth-footer-text">
+            OTP expires in 15 minutes. Check your spam folder if you don't see it.
+        </p>
+    </div>
+
+    <div class="auth-decoration">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+    </div>
+</div>
+
+<style>
+    .auth-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+        position: relative;
+    }
+
+    .auth-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-xl);
+        padding: var(--spacing-2xl);
+        width: 100%;
+        max-width: 420px;
+        position: relative;
+        z-index: 1;
+    }
+
+    .auth-header {
+        text-align: center;
+        margin-bottom: var(--spacing-xl);
+    }
+
+    .auth-icon {
+        font-size: 3rem;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .auth-header h1 {
+        font-size: 1.75rem;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    .auth-header p {
+        color: var(--text-secondary);
+        font-size: 0.9rem;
+    }
+
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-lg);
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: var(--spacing-sm);
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: var(--spacing-md);
+        border: 2px solid var(--border-color);
+        border-radius: var(--radius-lg);
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        font-size: 1.5rem;
+        text-align: center;
+        letter-spacing: 8px;
+        font-weight: 600;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: var(--primary);
+    }
+
+    .auth-divider {
+        display: flex;
+        align-items: center;
+        margin: var(--spacing-lg) 0;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    .auth-divider span {
+        padding: 0 var(--spacing-md);
+        color: var(--text-secondary);
+        font-size: 0.85rem;
+    }
+
+    .resend-form {
+        margin-bottom: var(--spacing-md);
+    }
+
+    .auth-footer-text {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 0.8rem;
+        margin-top: var(--spacing-md);
+    }
+
+    .auth-decoration {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        pointer-events: none;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
