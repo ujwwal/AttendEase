@@ -1,0 +1,346 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Assistant - AttendEase{% endblock %}
+
+{% block content %}
+<div class="chat-page">
+    <!-- Chat Header -->
+    <div class="chat-header">
+        <a href="{{ url_for('dashboard') }}" class="back-btn">
+            <span>←</span>
+        </a>
+        <div class="chat-header-info">
+            <div class="ai-avatar">✨</div>
+            <div class="ai-info">
+                <h1>AI Assistant</h1>
+                <span class="ai-status">Online</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Messages Container -->
+    <div class="chat-messages" id="chatMessages">
+        <!-- Welcome Message -->
+        <div class="message ai-message">
+            <div class="message-avatar">✨</div>
+            <div class="message-content">
+                <div class="message-bubble">
+                    <p>Hi {{ current_user.name.split()[0] }}! 👋</p>
+                    <p>I'm your attendance assistant. I can help you:</p>
+                    <ul>
+                        <li>📝 Mark attendance for your subjects</li>
+                        <li>📊 Show your attendance summary</li>
+                        <li>🎯 Track your attendance goals</li>
+                    </ul>
+                    <p>Try saying something like:</p>
+                    <p><em>"Mark 2 lectures present for Web Programming"</em></p>
+                    <p><em>"Show my attendance summary"</em></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" id="quickActions">
+        <button class="quick-action-btn" onclick="sendQuickAction('Show my attendance summary')">
+            📊 Summary
+        </button>
+        <button class="quick-action-btn" onclick="sendQuickAction('Which subjects need attention?')">
+            ⚠️ Low Attendance
+        </button>
+        <button class="quick-action-btn" onclick="sendQuickAction('Mark all subjects present for today, 1 lecture each')">
+            ✅ Mark All Present
+        </button>
+    </div>
+
+    <!-- Chat Input Area -->
+    <div class="chat-input-area">
+        <form id="chatForm" class="chat-form">
+            <div class="input-container">
+                <input 
+                    type="text" 
+                    id="chatInput" 
+                    placeholder="Ask about your attendance..." 
+                    autocomplete="off"
+                    maxlength="500"
+                >
+                <button type="submit" class="send-btn" id="sendBtn">
+                    <span class="send-icon">➤</span>
+                </button>
+            </div>
+        </form>
+        <p class="input-hint">
+            <span id="rateLimitInfo">20 messages remaining</span>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const chatMessages = document.getElementById('chatMessages');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const quickActions = document.getElementById('quickActions');
+    const rateLimitInfo = document.getElementById('rateLimitInfo');
+
+    let isProcessing = false;
+
+    // Send message on form submit
+    chatForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        sendMessage();
+    });
+
+    // Quick action handler
+    function sendQuickAction(message) {
+        chatInput.value = message;
+        sendMessage();
+    }
+
+    // Send message to API
+    async function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message || isProcessing) return;
+
+        isProcessing = true;
+        sendBtn.disabled = true;
+        chatInput.disabled = true;
+
+        // Hide quick actions after first message
+        quickActions.style.display = 'none';
+
+        // Add user message to chat
+        addMessage(message, 'user');
+        chatInput.value = '';
+
+        // Show typing indicator
+        const typingId = showTypingIndicator();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: message })
+            });
+
+            const data = await response.json();
+
+            // Remove typing indicator
+            removeTypingIndicator(typingId);
+
+            if (response.ok) {
+                // Update rate limit info
+                if (data.rate_limit_remaining !== undefined) {
+                    rateLimitInfo.textContent = `${data.rate_limit_remaining} messages remaining`;
+                }
+
+                // Add AI response
+                if (data.has_action && data.action === 'preview_attendance') {
+                    addMessage(data.response, 'ai');
+                    addConfirmationCard(data.action_data);
+                } else {
+                    addMessage(data.response, 'ai');
+                }
+            } else {
+                addMessage(data.error || 'Sorry, something went wrong. Please try again.', 'ai', true);
+            }
+        } catch (error) {
+            removeTypingIndicator(typingId);
+            addMessage('Sorry, I couldn\'t connect to the server. Please check your connection.', 'ai', true);
+        }
+
+        isProcessing = false;
+        sendBtn.disabled = false;
+        chatInput.disabled = false;
+        chatInput.focus();
+    }
+
+    // Add message to chat
+    function addMessage(text, sender, isError = false) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `message ${sender}-message${isError ? ' error-message' : ''}`;
+
+        if (sender === 'ai') {
+            messageDiv.innerHTML = `
+                <div class="message-avatar">✨</div>
+                <div class="message-content">
+                    <div class="message-bubble">${formatMessage(text)}</div>
+                </div>
+            `;
+        } else {
+            messageDiv.innerHTML = `
+                <div class="message-content">
+                    <div class="message-bubble">${escapeHtml(text)}</div>
+                </div>
+            `;
+        }
+
+        chatMessages.appendChild(messageDiv);
+        scrollToBottom();
+    }
+
+    // Format AI message (convert markdown-like syntax)
+    function formatMessage(text) {
+        // Escape HTML first
+        text = escapeHtml(text);
+        // Convert **bold** to <strong>
+        text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Convert *italic* to <em>
+        text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        // Convert newlines to <br>
+        text = text.replace(/\n/g, '<br>');
+        return text;
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // Add confirmation card for attendance preview
+    function addConfirmationCard(data) {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'message ai-message';
+        cardDiv.id = 'confirmationCard';
+
+        let tableRows = data.map(item => `
+            <tr>
+                <td>${escapeHtml(item.subject_name)}</td>
+                <td>${item.date}</td>
+                <td>${item.lectures}</td>
+                <td><span class="status-badge ${item.status}">${item.status}</span></td>
+            </tr>
+        `).join('');
+
+        cardDiv.innerHTML = `
+            <div class="message-avatar">✨</div>
+            <div class="message-content">
+                <div class="confirmation-card">
+                    <h3>📋 Attendance Preview</h3>
+                    <p>Please review and confirm:</p>
+                    <table class="preview-table">
+                        <thead>
+                            <tr>
+                                <th>Subject</th>
+                                <th>Date</th>
+                                <th>Lectures</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                    <div class="confirmation-actions">
+                        <button class="btn btn-confirm" onclick="confirmAttendance()">
+                            ✓ Confirm
+                        </button>
+                        <button class="btn btn-cancel" onclick="cancelAttendance()">
+                            ✕ Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        chatMessages.appendChild(cardDiv);
+        scrollToBottom();
+    }
+
+    // Confirm attendance
+    async function confirmAttendance() {
+        const card = document.getElementById('confirmationCard');
+        if (!card) return;
+
+        // Disable buttons
+        const buttons = card.querySelectorAll('button');
+        buttons.forEach(btn => btn.disabled = true);
+
+        try {
+            const response = await fetch('/api/chat/confirm', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const data = await response.json();
+
+            // Remove confirmation card
+            card.remove();
+
+            if (response.ok) {
+                addMessage(`✅ ${data.message}`, 'ai');
+            } else {
+                addMessage(`❌ ${data.error}`, 'ai', true);
+            }
+        } catch (error) {
+            card.remove();
+            addMessage('❌ Failed to confirm attendance. Please try again.', 'ai', true);
+        }
+    }
+
+    // Cancel attendance
+    async function cancelAttendance() {
+        const card = document.getElementById('confirmationCard');
+        if (!card) return;
+
+        try {
+            await fetch('/api/chat/cancel', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+        } catch (error) {
+            // Ignore errors for cancel
+        }
+
+        card.remove();
+        addMessage('Attendance marking cancelled. Let me know if you need anything else!', 'ai');
+    }
+
+    // Show typing indicator
+    function showTypingIndicator() {
+        const id = 'typing-' + Date.now();
+        const typingDiv = document.createElement('div');
+        typingDiv.className = 'message ai-message typing-indicator-container';
+        typingDiv.id = id;
+        typingDiv.innerHTML = `
+            <div class="message-avatar">✨</div>
+            <div class="message-content">
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        `;
+        chatMessages.appendChild(typingDiv);
+        scrollToBottom();
+        return id;
+    }
+
+    // Remove typing indicator
+    function removeTypingIndicator(id) {
+        const indicator = document.getElementById(id);
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Scroll to bottom of chat
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    // Focus input on load
+    chatInput.focus();
+</script>
+{% endblock %}

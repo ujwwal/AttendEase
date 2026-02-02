@@ -4,15 +4,26 @@ Flask Application Entry Point
 import sys
 import os
 import threading
+import json
+import time
+from collections import defaultdict
 
 # Get the absolute path to the project root
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from datetime import datetime, date, timedelta
 from config import Config, DEFAULT_SUBJECTS
 from models import db, User, Subject, Attendance
+
+# Gemini AI imports
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+    print("Warning: google-generativeai not installed. AI chat will be disabled.")
 
 # Create Flask app
 app = Flask(__name__, 
@@ -30,6 +41,42 @@ login_manager.login_message_category = 'info'
 
 # Google Drive folder configuration
 GOOGLE_DRIVE_FOLDER_ID = '1aBHLl0Wp8fcApVb4d-ZBUcfOQdsh02KU'
+
+# Rate limiting for AI chat (20 requests per minute per user)
+chat_rate_limits = defaultdict(list)
+RATE_LIMIT_REQUESTS = 20
+RATE_LIMIT_WINDOW = 60  # seconds
+
+def check_rate_limit(user_id):
+    """Check if user has exceeded rate limit. Returns (allowed, remaining)."""
+    now = time.time()
+    # Clean old entries
+    chat_rate_limits[user_id] = [t for t in chat_rate_limits[user_id] if now - t < RATE_LIMIT_WINDOW]
+    
+    if len(chat_rate_limits[user_id]) >= RATE_LIMIT_REQUESTS:
+        return False, 0
+    
+    chat_rate_limits[user_id].append(now)
+    return True, RATE_LIMIT_REQUESTS - len(chat_rate_limits[user_id])
+
+# Initialize Gemini AI
+def get_gemini_model():
+    """Get configured Gemini model instance."""
+    if not GEMINI_AVAILABLE:
+        return None
+    
+    api_key = Config.GEMINI_API_KEY
+    if not api_key:
+        print("Warning: GEMINI_API_KEY not set. AI chat will be disabled.")
+        return None
+    
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(Config.GEMINI_MODEL)
+        return model
+    except Exception as e:
+        print(f"Error initializing Gemini: {e}")
+        return None
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -550,6 +597,289 @@ def settings():
 @login_required
 def notes():
     return render_template('notes.html', folder_id=GOOGLE_DRIVE_FOLDER_ID)
+
+# ============================================
+# AI Chat Routes
+# ============================================
+
+def get_user_context():
+    """Build context about user's subjects and attendance for AI."""
+    subjects = Subject.query.all()
+    today = date.today()
+    
+    context_lines = []
+    context_lines.append(f"Today's date: {today.strftime('%Y-%m-%d')} ({today.strftime('%A')})")
+    context_lines.append(f"User: {current_user.name}")
+    context_lines.append("\nSubjects and current attendance:")
+    
+    subject_list = []
+    for subject in subjects:
+        stats = subject.get_user_attendance(current_user.id)
+        subject_info = {
+            'id': subject.id,
+            'name': subject.name,
+            'attended': stats['attended'],
+            'total': stats['total_marked'],
+            'percentage': stats['percentage']
+        }
+        subject_list.append(subject_info)
+        context_lines.append(f"- {subject.name} (ID: {subject.id}): {stats['attended']}/{stats['total_marked']} lectures ({stats['percentage']}%)")
+    
+    return "\n".join(context_lines), subject_list
+
+def get_ai_system_prompt():
+    """Return the restrictive system prompt for the AI."""
+    return """You are an attendance assistant for AttendEase, a college attendance tracking app. 
+
+STRICT RULES - YOU MUST FOLLOW THESE:
+1. You can ONLY help with:
+   - Marking attendance (present or absent) for specific subjects
+   - Showing attendance summaries/statistics
+   - Answering questions about the user's attendance data
+
+2. You CANNOT and MUST NEVER:
+   - Delete any attendance records
+   - Modify user account information
+   - Access or discuss anything outside attendance management
+   - Execute any database operations directly
+   - Provide information about other users
+
+3. For marking attendance:
+   - ALWAYS show a summary preview BEFORE marking
+   - For batch operations (multiple lectures), use TODAY'S DATE unless the user specifies a different date
+   - Ask for confirmation before any marking operation
+   - Valid statuses are: "present" or "absent"
+   - Lectures count should be between 1-3 per subject per day
+
+4. Response format for attendance marking:
+   When the user wants to mark attendance, respond with a JSON block in this exact format:
+   ```json
+   {
+     "action": "preview_attendance",
+     "message": "Your friendly message explaining the preview",
+     "data": [
+       {
+         "subject_id": <id>,
+         "subject_name": "<name>",
+         "date": "YYYY-MM-DD",
+         "lectures": <number 1-3>,
+         "status": "present" or "absent"
+       }
+     ]
+   }
+   ```
+
+5. Response format for attendance summary:
+   When showing attendance summary, just respond with a friendly message containing the statistics.
+
+6. If user asks for something you cannot do, politely explain that you can only help with attendance marking and viewing summaries.
+
+Remember: BE HELPFUL but STAY WITHIN YOUR BOUNDARIES. Safety first!"""
+
+def parse_ai_response(response_text):
+    """Parse AI response to extract any JSON action blocks."""
+    try:
+        # Look for JSON block in the response
+        if '```json' in response_text:
+            start = response_text.find('```json') + 7
+            end = response_text.find('```', start)
+            if end > start:
+                json_str = response_text[start:end].strip()
+                action_data = json.loads(json_str)
+                # Extract message text (everything before and after JSON block)
+                message_before = response_text[:response_text.find('```json')].strip()
+                message_after = response_text[end + 3:].strip()
+                clean_message = f"{message_before} {message_after}".strip()
+                if not clean_message and 'message' in action_data:
+                    clean_message = action_data['message']
+                return {
+                    'has_action': True,
+                    'action': action_data.get('action'),
+                    'data': action_data.get('data', []),
+                    'message': clean_message or action_data.get('message', '')
+                }
+    except json.JSONDecodeError:
+        pass
+    
+    # No action found, return as plain message
+    return {
+        'has_action': False,
+        'message': response_text
+    }
+
+@app.route('/chat')
+@login_required
+def chat():
+    """Render the AI chat page."""
+    # Check if Gemini is available
+    if not GEMINI_AVAILABLE or not Config.GEMINI_API_KEY:
+        flash('AI Chat is currently unavailable. Please try again later.', 'warning')
+        return redirect(url_for('dashboard'))
+    
+    return render_template('chat.html')
+
+@app.route('/api/chat', methods=['POST'])
+@login_required
+def chat_api():
+    """Handle chat messages and interact with Gemini AI."""
+    # Check rate limit
+    allowed, remaining = check_rate_limit(current_user.id)
+    if not allowed:
+        return jsonify({
+            'error': 'Rate limit exceeded. Please wait a moment before sending more messages.',
+            'rate_limit_remaining': 0
+        }), 429
+    
+    # Check if Gemini is available
+    model = get_gemini_model()
+    if not model:
+        return jsonify({'error': 'AI service is currently unavailable.'}), 503
+    
+    data = request.get_json()
+    user_message = data.get('message', '').strip()
+    
+    if not user_message:
+        return jsonify({'error': 'Message cannot be empty.'}), 400
+    
+    if len(user_message) > 500:
+        return jsonify({'error': 'Message too long. Please keep it under 500 characters.'}), 400
+    
+    try:
+        # Build context
+        user_context, subject_list = get_user_context()
+        
+        # Build the full prompt
+        full_prompt = f"""{get_ai_system_prompt()}
+
+CURRENT USER CONTEXT:
+{user_context}
+
+USER MESSAGE: {user_message}
+
+Respond helpfully while following all the rules above."""
+
+        # Get AI response
+        response = model.generate_content(full_prompt)
+        ai_response = response.text
+        
+        # Parse the response for any actions
+        parsed = parse_ai_response(ai_response)
+        
+        # If there's a preview action, store it in session for confirmation
+        if parsed['has_action'] and parsed['action'] == 'preview_attendance':
+            session['pending_attendance'] = {
+                'data': parsed['data'],
+                'timestamp': time.time()
+            }
+        
+        return jsonify({
+            'response': parsed['message'],
+            'has_action': parsed['has_action'],
+            'action': parsed.get('action'),
+            'action_data': parsed.get('data', []),
+            'rate_limit_remaining': remaining
+        })
+        
+    except Exception as e:
+        print(f"Chat API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': 'An error occurred while processing your message.'}), 500
+
+@app.route('/api/chat/confirm', methods=['POST'])
+@login_required
+def confirm_attendance():
+    """Confirm and execute the pending attendance action."""
+    # Check if there's a pending action
+    pending = session.get('pending_attendance')
+    
+    if not pending:
+        return jsonify({'error': 'No pending attendance action found. Please try again.'}), 400
+    
+    # Check if the pending action is still valid (within 5 minutes)
+    if time.time() - pending['timestamp'] > 300:
+        session.pop('pending_attendance', None)
+        return jsonify({'error': 'The attendance preview has expired. Please start over.'}), 400
+    
+    data = pending['data']
+    today = date.today()
+    
+    try:
+        marked_count = 0
+        for item in data:
+            subject_id = item.get('subject_id')
+            date_str = item.get('date')
+            lectures = item.get('lectures', 1)
+            status = item.get('status', 'present')
+            
+            # Validate subject exists
+            subject = Subject.query.get(subject_id)
+            if not subject:
+                continue
+            
+            # Parse and validate date
+            try:
+                attendance_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+            except (ValueError, TypeError):
+                attendance_date = today
+            
+            # Prevent future dates
+            if attendance_date > today:
+                attendance_date = today
+            
+            # Validate lectures count
+            lectures = max(1, min(3, int(lectures)))
+            
+            # Calculate present/total based on status
+            if status == 'present':
+                lectures_present = lectures
+            else:
+                lectures_present = 0
+            
+            # Upsert attendance record
+            existing = Attendance.query.filter_by(
+                user_id=current_user.id,
+                subject_id=subject_id,
+                date=attendance_date
+            ).first()
+            
+            if existing:
+                existing.lectures_total = lectures
+                existing.lectures_present = lectures_present
+            else:
+                record = Attendance(
+                    user_id=current_user.id,
+                    subject_id=subject_id,
+                    date=attendance_date,
+                    lectures_total=lectures,
+                    lectures_present=lectures_present
+                )
+                db.session.add(record)
+            
+            marked_count += 1
+        
+        db.session.commit()
+        
+        # Clear the pending action
+        session.pop('pending_attendance', None)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Successfully marked attendance for {marked_count} subject(s)!',
+            'marked_count': marked_count
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error confirming attendance: {e}")
+        return jsonify({'error': 'Failed to mark attendance. Please try again.'}), 500
+
+@app.route('/api/chat/cancel', methods=['POST'])
+@login_required
+def cancel_attendance():
+    """Cancel the pending attendance action."""
+    session.pop('pending_attendance', None)
+    return jsonify({'success': True, 'message': 'Attendance marking cancelled.'})
 
 @app.route('/api/cron/weekly-report')
 def cron_weekly_report():
