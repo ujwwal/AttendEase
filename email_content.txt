@@ -1,0 +1,33 @@
+🚀 AttendEase Now Powered by AI! ✨
+
+Dear Students,
+
+We're thrilled to announce an exciting new feature in AttendEase: **AI-Powered Chat Assistant**!
+
+🤖 What's New?
+We've integrated Google's Gemini AI to help you understand your attendance patterns better. Our AI can now:
+• Provide personalized attendance insights
+• Summarize your weekly performance
+• Identify subjects where you might need to improve attendance
+• Answer questions about your attendance data
+
+💡 How to Use It?
+Simply click the **"AI Chat ✨"** button in the navigation bar (next to Mark & Notes) to start chatting with our AI assistant. Ask any questions about your attendance, and get intelligent insights instantly!
+
+📊 Weekly AI Summaries
+Starting this week, your weekly email reports now include an **AI-generated summary** at the bottom, offering personalized recommendations based on your attendance.
+
+⚡ Fair Usage Policy
+To ensure fair usage for all students, we've implemented a limit of **20 AI queries per day** per user.
+
+🎯 Why This Matters?
+Better insights = Better attendance decisions = Better academic performance!
+
+We encourage you to explore this new feature and see how AI can help you stay on top of your attendance.
+
+Happy learning! 🎓
+
+Best regards,
+**The AttendEase Team**
+
+P.S. Have feedback? We'd love to hear from you!

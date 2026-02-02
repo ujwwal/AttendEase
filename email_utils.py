@@ -7,6 +7,60 @@ import resend
 # Initialize Resend with API key from environment variable
 resend.api_key = os.environ.get('RESEND_API_KEY')
 
+# Gemini AI for email summaries
+try:
+    from google import genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+
+def generate_ai_summary(user_name, subjects_data, weekly_percentage, overall_percentage):
+    """
+    Generate an AI-powered personalized summary for the weekly report.
+    """
+    if not GENAI_AVAILABLE:
+        return None
+    
+    api_key = os.environ.get('GEMINI_API_KEY')
+    if not api_key:
+        return None
+    
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        # Build subject details for the prompt
+        subject_details = "\n".join([
+            f"- {sub['name']}: {sub['attended']}/{sub['total']} lectures ({int(sub['attended']/sub['total']*100) if sub['total'] > 0 else 0}%)"
+            for sub in subjects_data
+        ])
+        
+        prompt = f"""You are an encouraging academic advisor. Generate a brief, personalized 2-3 sentence summary for a student's weekly attendance report.
+
+Student: {user_name}
+Weekly Attendance: {weekly_percentage}%
+Overall Attendance: {overall_percentage}%
+
+Subject-wise breakdown:
+{subject_details}
+
+Rules:
+- Be encouraging but honest
+- If attendance is low in specific subjects, mention them briefly
+- Keep it concise (2-3 sentences max)
+- Use a friendly, supportive tone
+- Don't use emojis
+- Focus on actionable insights"""
+        
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt
+        )
+        
+        return response.text.strip()
+    except Exception as e:
+        print(f"Error generating AI summary: {e}")
+        return None
+
 def send_welcome_email(user_email, user_name, erp_number, password):
     """
     Send a welcome email to newly registered users with their account details.
@@ -202,6 +256,22 @@ def send_weekly_report_email(user_email, user_name, start_date, end_date, subjec
             header_color = "#ef4444" # Red
             message = "🚨 Critical: Your attendance was low this week. Please catch up!"
 
+        # Generate AI summary
+        ai_summary = generate_ai_summary(user_name, subjects_data, weekly_percentage, overall_percentage)
+        
+        # AI summary box HTML (only if summary was generated)
+        ai_summary_html = ""
+        if ai_summary:
+            ai_summary_html = f"""
+                    <div class="ai-summary-box">
+                        <div class="ai-header">
+                            <span class="ai-icon">✨</span>
+                            <span class="ai-title">AI Insights</span>
+                        </div>
+                        <p class="ai-text">{ai_summary}</p>
+                    </div>
+            """
+
         html_content = f"""
         <!DOCTYPE html>
         <html>
@@ -233,6 +303,11 @@ def send_weekly_report_email(user_email, user_name, start_date, end_date, subjec
                 .cta-button {{ display: block; width: 100%; background-color: #6366f1; color: #ffffff !important; text-align: center; padding: 14px 0; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 5px; transition: background 0.2s; border: none; }}
                 .cta-button:hover {{ background-color: #4f46e5; }}
                 .attendance-warning {{ background-color: #451a03; border: 1px solid #f59e0b; color: #fcd34d !important; padding: 12px; border-radius: 8px; margin-top: 25px; text-align: center; font-size: 13px; font-weight: 500; }}
+                .ai-summary-box {{ background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%); border: 1px solid rgba(139, 92, 246, 0.3); border-radius: 12px; padding: 20px; margin-top: 25px; }}
+                .ai-header {{ display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }}
+                .ai-icon {{ font-size: 18px; }}
+                .ai-title {{ font-size: 14px; font-weight: 600; color: #a78bfa !important; text-transform: uppercase; letter-spacing: 0.5px; }}
+                .ai-text {{ color: #e2e8f0 !important; font-size: 14px; line-height: 1.6; margin: 0; }}
             </style>
         </head>
         <body>
@@ -275,6 +350,8 @@ def send_weekly_report_email(user_email, user_name, start_date, end_date, subjec
                     <div class="attendance-warning">
                         ⚠️ Reminder: Please maintain your attendance above 75% to avoid any academic penalties.
                     </div>
+
+                    {ai_summary_html}
                 </div>
                 
                 <div class="footer">
