@@ -19,11 +19,11 @@ from models import db, User, Subject, Attendance
 
 # Gemini AI imports
 try:
-    import google.generativeai as genai
+    from google import genai
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
-    print("Warning: google-generativeai not installed. AI chat will be disabled.")
+    print("Warning: google-genai not installed. AI chat will be disabled.")
 
 # Create Flask app
 app = Flask(__name__, 
@@ -42,15 +42,15 @@ login_manager.login_message_category = 'info'
 # Google Drive folder configuration
 GOOGLE_DRIVE_FOLDER_ID = '1aBHLl0Wp8fcApVb4d-ZBUcfOQdsh02KU'
 
-# Rate limiting for AI chat (20 requests per minute per user)
+# Rate limiting for AI chat (20 requests per day per user)
 chat_rate_limits = defaultdict(list)
 RATE_LIMIT_REQUESTS = 20
-RATE_LIMIT_WINDOW = 60  # seconds
+RATE_LIMIT_WINDOW = 86400  # 24 hours in seconds
 
 def check_rate_limit(user_id):
-    """Check if user has exceeded rate limit. Returns (allowed, remaining)."""
+    """Check if user has exceeded daily rate limit. Returns (allowed, remaining)."""
     now = time.time()
-    # Clean old entries
+    # Clean old entries (older than 24 hours)
     chat_rate_limits[user_id] = [t for t in chat_rate_limits[user_id] if now - t < RATE_LIMIT_WINDOW]
     
     if len(chat_rate_limits[user_id]) >= RATE_LIMIT_REQUESTS:
@@ -60,8 +60,8 @@ def check_rate_limit(user_id):
     return True, RATE_LIMIT_REQUESTS - len(chat_rate_limits[user_id])
 
 # Initialize Gemini AI
-def get_gemini_model():
-    """Get configured Gemini model instance."""
+def get_gemini_client():
+    """Get configured Gemini client instance."""
     if not GEMINI_AVAILABLE:
         return None
     
@@ -71,9 +71,8 @@ def get_gemini_model():
         return None
     
     try:
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel(Config.GEMINI_MODEL)
-        return model
+        client = genai.Client(api_key=api_key)
+        return client
     except Exception as e:
         print(f"Error initializing Gemini: {e}")
         return None
@@ -731,8 +730,8 @@ def chat_api():
         }), 429
     
     # Check if Gemini is available
-    model = get_gemini_model()
-    if not model:
+    client = get_gemini_client()
+    if not client:
         return jsonify({'error': 'AI service is currently unavailable.'}), 503
     
     data = request.get_json()
@@ -759,7 +758,10 @@ USER MESSAGE: {user_message}
 Respond helpfully while following all the rules above."""
 
         # Get AI response
-        response = model.generate_content(full_prompt)
+        response = client.models.generate_content(
+            model=Config.GEMINI_MODEL,
+            contents=full_prompt
+        )
         ai_response = response.text
         
         # Parse the response for any actions

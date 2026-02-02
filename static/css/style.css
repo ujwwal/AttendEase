@@ -178,6 +178,17 @@ a:hover {
     color: var(--text-primary);
 }
 
+.nav-link.nav-ai {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+    color: var(--primary);
+}
+
+.nav-link.nav-ai:hover,
+.nav-link.nav-ai.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(236, 72, 153, 0.3) 100%);
+    color: var(--text-primary);
+}
+
 .nav-link.logout:hover {
     background: var(--danger);
     color: white;
@@ -495,6 +506,44 @@ a:hover {
 .btn-outline:hover {
     background: var(--bg-tertiary);
     border-color: var(--primary);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg), 0 0 20px rgba(99, 102, 241, 0.4);
+}
+
+.btn-ai-chat {
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.btn-ai-chat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg), 0 0 25px rgba(139, 92, 246, 0.5);
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: var(--shadow-md), 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+    50% {
+        box-shadow: var(--shadow-md), 0 0 20px rgba(139, 92, 246, 0.5);
+    }
+}
+
+.header-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
 }
 
 .btn-full {

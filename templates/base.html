@@ -31,6 +31,10 @@
                     <span class="nav-icon">✅</span>
                     <span>Mark</span>
                 </a>
+                <a href="{{ url_for('chat') }}" class="nav-link nav-ai {% if request.endpoint == 'chat' %}active{% endif %}">
+                    <span class="nav-icon">✨</span>
+                    <span>AI Chat</span>
+                </a>
                 <a href="{{ url_for('notes') }}" class="nav-link {% if request.endpoint == 'notes' %}active{% endif %}">
                     <span class="nav-icon">📝</span>
                     <span>Notes</span>

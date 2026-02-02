@@ -6,7 +6,7 @@ class Config:
     
     # Gemini AI Configuration
     GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
-    GEMINI_MODEL = 'gemini-2.0-flash'  # Using Gemini 2.0 Flash model
+    GEMINI_MODEL = 'gemini-3-pro-preview'  # Using Gemini 3 Pro
     
     # Support multiple database providers:
     # - Neon: DATABASE_URL
