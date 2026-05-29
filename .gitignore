@@ -26,6 +26,7 @@ ENV/
 env/
 .venv/
 .env
+.env.local
 
 # SQLite database (local development)
 *.db
@@ -48,3 +49,4 @@ Thumbs.db
 
 # Vercel
 .vercel
+.env*

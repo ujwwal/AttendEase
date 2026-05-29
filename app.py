@@ -162,59 +162,9 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    
-    if request.method == 'POST':
-        name = request.form.get('name', '').strip()
-        username = request.form.get('username', '').strip()
-        email = request.form.get('email', '').strip().lower()
-        password = request.form.get('password', '')
-        confirm_password = request.form.get('confirm_password', '')
-        
-        if not name or not username or not email or not password:
-            flash('All fields are required!', 'error')
-            return render_template('register.html')
-        
-        if password != confirm_password:
-            flash('Passwords do not match!', 'error')
-            return render_template('register.html')
-        
-        if len(password) < 6:
-            flash('Password must be at least 6 characters!', 'error')
-            return render_template('register.html')
-        
-        if User.query.filter_by(username=username).first():
-            flash('ERP number already registered!', 'error')
-            return render_template('register.html')
-        
-        if User.query.filter_by(email=email).first():
-            flash('Email already registered!', 'error')
-            return render_template('register.html')
-        
-        user = User(name=name, username=username, email=email)
-        user.set_password(password)
-        db.session.add(user)
-        
-        try:
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            print(f"Database error during registration: {e}")
-            flash('Registration failed. Please try again.', 'error')
-            return render_template('register.html')
-        
-        # Send welcome email
-        try:
-            from email_utils import send_welcome_email
-            send_welcome_email(email, name, username, password)
-        except Exception as e:
-            print(f"Failed to send welcome email: {e}")
-        
-        flash('Registration successful! Check your email for account details.', 'success')
-        return redirect(url_for('login'))
-    
-    return render_template('register.html')
+    # ── SHUTDOWN: Registration disabled ──
+    flash('AttendEase has been shut down. New registrations are no longer accepted.', 'info')
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -398,6 +348,12 @@ def dashboard():
 @app.route('/mark-attendance', methods=['GET', 'POST'])
 @login_required
 def mark_attendance():
+    # ── SHUTDOWN: Attendance marking disabled ──
+    flash('AttendEase has been shut down. Attendance marking is no longer available. Your existing records are still accessible on the dashboard.', 'info')
+    return redirect(url_for('dashboard'))
+
+
+def _mark_attendance_disabled():
     subjects = Subject.query.all()
     today = date.today()
     
@@ -710,24 +666,16 @@ def parse_ai_response(response_text):
 @login_required
 def chat():
     """Render the AI chat page."""
-    # Check if Gemini is available
-    if not GEMINI_AVAILABLE or not Config.GEMINI_API_KEY:
-        flash('AI Chat is currently unavailable. Please try again later.', 'warning')
-        return redirect(url_for('dashboard'))
-    
-    return render_template('chat.html')
+    # ── SHUTDOWN: AI chat disabled ──
+    flash('AttendEase has been shut down. AI Chat is no longer available.', 'info')
+    return redirect(url_for('dashboard'))
 
 @app.route('/api/chat', methods=['POST'])
 @login_required
 def chat_api():
     """Handle chat messages and interact with Gemini AI."""
-    # Check rate limit
-    allowed, remaining = check_rate_limit(current_user.id)
-    if not allowed:
-        return jsonify({
-            'error': 'Rate limit exceeded. Please wait a moment before sending more messages.',
-            'rate_limit_remaining': 0
-        }), 429
+    # ── SHUTDOWN: AI chat disabled ──
+    return jsonify({'error': 'AttendEase has been shut down. AI Chat is no longer available.'}), 503
     
     # Check if Gemini is available
     client = get_gemini_client()
@@ -887,9 +835,13 @@ def cancel_attendance():
 def cron_weekly_report():
     """
     Cron job to send weekly attendance reports.
-    Allowed only via manual trigger or Vercel Cron (secured by CRON_SECRET if needed, 
-    but for now open as per simple requirements).
+    SHUTDOWN: This cron job has been disabled.
     """
+    # ── SHUTDOWN: Weekly reports disabled ──
+    return jsonify({
+        'status': 'shutdown',
+        'message': 'AttendEase has been shut down. Weekly reports are no longer sent.'
+    }), 200
     try:
         from email_utils import send_weekly_report_email
         
